@@ -42,13 +42,13 @@ class Schedule
 {
 	@CKRecordNameAnnotation() // No CloudKit record field name is needed as the field is always 'recordName'
 	String? uuid;
-
+	
 	@CKFieldAnnotation("scheduleCode") // The name of the CloudKit record field is included in the annotation
 	String? code;
-
+	
 	@CKFieldAnnotation("periodTimes")
 	List<String>? blockTimes;
-
+	
 	@CKFieldAnnotation("periodNumbers")
 	List<int>? blockNumbers;
 }
@@ -67,11 +67,11 @@ Many are fairly basic:
 - `List<int>`
 
 There are a couple that require some explaination:
-- `CKReference` / `List<CKReference>`
+- `CKReference` / `List<CKReference>`:
 The reference field type in CloudKit is used to create relations between two record types. The `CKReference` class has been created to represent this relation. To fetch the object associated with the reference, simply call the `fetchFromCloud<T>()` function, providing the corresponding local type (in place of `T`) when doing so.
-- `CKAsset`
+- `CKAsset`:
 The asset field type in CloudKit allows for the storage of literal bytes of data as a discrete asset. One common use for this type is to store an image. The `CKAsset` class has been created to represent this type, and it likewise has a `fetchAsset()` function to retrieve and cache the stored bytes. It also includes a `getAsImage()` function to convert the cached bytes to an image, if possible.
-- Subclasses of `CKCustomFieldType`
+- Subclasses of `CKCustomFieldType`:
 See below.
 
 \**More base field types will be added in later versions*
@@ -99,16 +99,16 @@ class Gender extends CKCustomFieldType<int>
 	static final other = Gender.withName(2, "Other");
 	static final unknown = Gender.withName(3, "Unknown");
 	static final genders = [female, male, other, unknown];
-
+	
 	String name;
-
+	
 	// Required constructors
 	Gender() : name = unknown.name, super.fromRecordField(unknown.rawValue);
 	Gender.fromRecordField(int raw) : name = genders[raw].name, super.fromRecordField(raw);
-
+	
 	// Used to create static instances above
 	Gender.withName(int raw, String name) : name = name, super.fromRecordField(raw);
-
+	
 	// The default toString() for CKCustomFieldType outputs the rawValue, but here it makes more sense to output the name
 	@override
 	String toString() => name;
