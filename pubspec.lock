@@ -65,7 +65,7 @@ packages:
     source: hosted
     version: "2.0.4"
   build_runner:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: build_runner
       url: "https://pub.dartlang.org"
@@ -155,13 +155,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.1"
-  cupertino_icons:
-    dependency: "direct dev"
-    description:
-      name: cupertino_icons
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.3"
   dart_style:
     dependency: transitive
     description:
@@ -234,7 +227,7 @@ packages:
     source: hosted
     version: "2.0.0"
   http:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: http
       url: "https://pub.dartlang.org"
@@ -388,14 +381,14 @@ packages:
     source: hosted
     version: "1.0.0"
   reflectable:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: reflectable
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.2"
   shared_preferences:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: shared_preferences
       url: "https://pub.dartlang.org"
@@ -540,7 +533,7 @@ packages:
     source: hosted
     version: "2.1.0"
   webview_flutter:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: webview_flutter
       url: "https://pub.dartlang.org"
