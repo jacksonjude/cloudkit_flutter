@@ -1,0 +1,3 @@
+class CKRecordNameAnnotation {
+  const CKRecordNameAnnotation();
+}
