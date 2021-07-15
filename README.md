@@ -10,14 +10,14 @@ This library currently only supports Android (and iOS, although its usefulness t
 
 Within your app, there are two stages involved in setting up this library. First, you must initialize the API manager with your CloudKit container, environment, and API token. Second, you must create your model classes based on the record types in CloudKit.
 
-### API Initilization
+### API Initialization
 
 Before calls to the CloudKit API can be made, three values must be provided to the `CKAPIManager`:
 - CloudKit Container: The container ID used by CloudKit, which is typically `iCloud.` + your bundle ID.
 - CloudKit API Token: A token which must be created via the CloudKit dashboard. **Importantly, you must select the last option within 'URL Redirect' for the 'Sign in Callback'. The custom URL can be any short string, such as 'redirect'.**
 - CloudKit Environment: Changes whether the production or development environment is used. Corresponding strings are provided in the `CKEnvironment` class.
 
-To initilize the manager, these three values must be passed into `CKAPIManager.initManager(String container, String apiToken, String environment)`. This call should preferably be done in conjunction with the reflection setup initilization, as described below.
+To initialize the manager, these three values must be passed into `CKAPIManager.initManager(String container, String apiToken, String environment)`. This call should preferably be done in conjunction with the reflection setup initialization, as described below.
 
 ### Model Classes - Annotation
 
@@ -66,7 +66,7 @@ Many are fairly basic:
 - `List<String>`
 - `List<int>`
 
-There are a couple that require some explaination:
+There are a couple that require some explanation:
 - `CKReference` / `List<CKReference>`:
 The reference field type in CloudKit is used to create relations between two record types. The `CKReference` class has been created to represent this relation. To fetch the object associated with the reference, simply call the `fetchFromCloud<T>()` function, providing the corresponding local type (in place of `T`) when doing so.
 - `CKAsset`:
@@ -119,13 +119,13 @@ class Gender extends CKCustomFieldType<int>
 
 **Whenever you make changes to your model classes or `CKCustomFieldType` subclasses**, you must regenerate object code to allow for reflection to be used within the library. To do this simply run `flutter pub run build_runner build lib` from the root folder of your Flutter project.
 
-Finally, you must indicate to the `CKRecordParser` class which model classes should be scanned. Do this via the `CKRecordParser.createRecordStructures(List<Type>)` function, listing the names of the local model classes. To scan the Schedule class for example, we would call `CKRecordParser.createRecordStructures([Schedule])`. This call should preferably be done in conjunction with the API Initilization, as described above.
+Finally, you must indicate to the `CKRecordParser` class which model classes should be scanned. Do this via the `CKRecordParser.createRecordStructures(List<Type>)` function, listing the names of the local model classes. To scan the Schedule class for example, we would call `CKRecordParser.createRecordStructures([Schedule])`. This call should preferably be done in conjunction with the API Initialization, as described above.
 
 ## Usage
 
 The main way to access the CloudKit API is through `CKOperation`, which is run though the `execute()` function. There are multiple kinds of operations, which are described below. \**More operations will be added in later versions*
 
-On creation, all operations require a string argument for the database (public, shared, private) to be used for the request. Optionally, a specific instance of a `CKAPIManager` can be passed in, although the shared instance is used by default. Additionally, a `BuildContext` can be optionally passed into the operation, in the offchance that an iCloud sign-in view is necessary.
+On creation, all operations require a string argument for the database (public, shared, private) to be used for the request. Optionally, a specific instance of a `CKAPIManager` can be passed in, although the shared instance is used by default. Additionally, a `BuildContext` can be optionally passed into the operation, in the off-chance that an iCloud sign-in view is necessary.
 
 ### CKCurrentUserOperation
 
@@ -139,7 +139,7 @@ Returned from the `execute()` call is the CloudKit ID of the signed-in user as a
 
 This operation is the main method to retrieve records from CloudKit.
 
-When creating the operation, you must pass in a local type for the operation to recieve. For example: `CKRecordQueryOperation<Schedule>(CKDatabase.PUBLIC_DATABASE)` would fetch all `Schedule` records from the public database. Optionally, you can pass in a specific `CKZone` (`zoneID`) or a `List<CKFilter>` (`filters`) to filter the results. You can also pass in a bool (`preloadAssets`) to denote whether or not to preload any `CKAsset` fields in fetched records.
+When creating the operation, you must pass in a local type for the operation to receive. For example: `CKRecordQueryOperation<Schedule>(CKDatabase.PUBLIC_DATABASE)` would fetch all `Schedule` records from the public database. Optionally, you can pass in a specific `CKZone` (`zoneID`) or a `List<CKFilter>` (`filters`) to filter the results. You can also pass in a bool (`preloadAssets`) to denote whether or not to preload any `CKAsset` fields in fetched records.
 
 Returned from the `execute()` call is an array of local objects with the type provided to the operation.
 
