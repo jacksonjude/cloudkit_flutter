@@ -1,4 +1,4 @@
-import 'package:cloudkit_flutter/ck_constants.dart';
+import 'package:cloudkit_flutter/src/ck_constants.dart';
 
 import '../../parsing/types/ck_field_type.dart';
 

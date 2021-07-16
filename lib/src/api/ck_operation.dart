@@ -1,5 +1,3 @@
-import 'package:cloudkit_flutter/api/request_models/ck_sort_descriptor.dart';
-import 'package:cloudkit_flutter/ck_constants.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'ck_api_manager.dart';
@@ -7,7 +5,9 @@ import 'request_models/ck_record_query_request.dart';
 import 'request_models/ck_zone.dart';
 import 'request_models/ck_query.dart';
 import 'request_models/ck_filter.dart';
+import 'request_models/ck_sort_descriptor.dart';
 import '../parsing/ck_record_parser.dart';
+import '../ck_constants.dart';
 
 /// The status after an operation has been executed.
 enum CKOperationState

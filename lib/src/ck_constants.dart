@@ -40,8 +40,8 @@ class CKConstants
 /// A container class to denote the CloudKit environment as a string.
 class CKEnvironment
 {
-  static const PRODUCTION_ENVIRONMENT = CKDatabase("production");
-  static const DEVELOPMENT_ENVIRONMENT = CKDatabase("development");
+  static const PRODUCTION_ENVIRONMENT = CKEnvironment("production");
+  static const DEVELOPMENT_ENVIRONMENT = CKEnvironment("development");
 
   final String _environment;
 
