@@ -141,7 +141,7 @@ Returned from the `execute()` call is the CloudKit ID of the signed-in user as a
 
 This operation is the main method to retrieve records from CloudKit.
 
-When creating the operation, you must pass in a local type for the operation to receive. For example: `CKRecordQueryOperation<Schedule>(CKDatabase.PUBLIC_DATABASE)` would fetch all `Schedule` records from the public database. Optionally, you can pass in a specific `CKZone` (`zoneID`) or a `List<CKFilter>` (`filters`) to filter the results. You can also pass in a bool (`preloadAssets`) to indicate whether any `CKAsset` fields in fetched records should be preloaded.
+When creating the operation, you must pass in a local type for the operation to receive. For example: `CKRecordQueryOperation<Schedule>(CKDatabase.PUBLIC_DATABASE)` would fetch all `Schedule` records from the public database. Optionally, you can pass in a specific `CKZone` (`zoneID`), a `List<CKFilter>` (`filters`), or a `List<CKSortDescriptor` (`sortDescriptors`) to organize the results. You can also pass in a bool (`preloadAssets`) to indicate whether any `CKAsset` fields in fetched records should be preloaded.
 
 Returned from the `execute()` call is an array of local objects with the type provided to the operation.
 
@@ -187,4 +187,4 @@ Includes classes necessary to annotate model files (CKRecordTypeAnnotation, CKRe
 
 ### cloudkit_flutter_api.dart
 
-Includes classes necessary to call the CloudKit API (CKOperation + subclasses, CKZone, CKFilter).
+Includes classes necessary to call the CloudKit API (CKOperation + subclasses, CKZone, CKFilter, CKSortDescriptor).

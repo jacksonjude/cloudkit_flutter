@@ -1,3 +1,4 @@
+import 'package:cloudkit_flutter/api/request_models/ck_sort_descriptor.dart';
 import 'package:cloudkit_flutter/ck_constants.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -91,10 +92,10 @@ class CKRecordQueryOperation<T extends Object> extends CKPostOperation
   late final CKRecordQueryRequest _recordQueryRequest;
   late final bool _shouldPreloadAssets;
 
-  CKRecordQueryOperation(CKDatabase database, {CKRecordQueryRequest? queryRequest, CKZone? zoneID, int? resultsLimit, List<CKFilter>? filters, bool? preloadAssets, CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context)
+  CKRecordQueryOperation(CKDatabase database, {CKRecordQueryRequest? queryRequest, CKZone? zoneID, int? resultsLimit, List<CKFilter>? filters, List<CKSortDescriptor>? sortDescriptors, bool? preloadAssets, CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context)
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
-    this._recordQueryRequest = queryRequest ?? CKRecordQueryRequest(zoneID ?? CKZone(), resultsLimit, CKQuery(recordStructure.ckRecordType, filterBy: filters));
+    this._recordQueryRequest = queryRequest ?? CKRecordQueryRequest(zoneID ?? CKZone(), resultsLimit, CKQuery(recordStructure.ckRecordType, filterBy: filters, sortBy: sortDescriptors));
     this._shouldPreloadAssets = preloadAssets ?? false;
   }
 
