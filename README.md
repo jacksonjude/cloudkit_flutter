@@ -125,9 +125,11 @@ Finally, you must indicate to the `CKRecordParser` class which model classes sho
 
 The main way to access the CloudKit API is through `CKOperation`, which is run though the `execute()` function. There are multiple kinds of operations, which are described below. \**More operations will be added in later versions*
 
+### Operations
+
 On creation, all operations require a string argument for the database (public, shared, private) to be used for the request. Optionally, a specific instance of a `CKAPIManager` can be passed in, although the shared instance is used by default. Additionally, a `BuildContext` can be optionally passed into the operation, in the off-chance that an iCloud sign-in view is necessary.
 
-### CKCurrentUserOperation
+#### CKCurrentUserOperation
 
 This operation fetches the CloudKit ID of the current user. It is also the simplest way to test if the user is signed in to iCloud, which is necessary to access the private database. Hence, the operation can be called at app launch or via a button to initiate the iCloud sign-in prompt.
 
@@ -135,13 +137,23 @@ Besides the default arguments for an operation as described above, this operatio
 
 Returned from the `execute()` call is the CloudKit ID of the signed-in user as a string.
 
-### CKRecordQueryOperation
+#### CKRecordQueryOperation
 
 This operation is the main method to retrieve records from CloudKit.
 
-When creating the operation, you must pass in a local type for the operation to receive. For example: `CKRecordQueryOperation<Schedule>(CKDatabase.PUBLIC_DATABASE)` would fetch all `Schedule` records from the public database. Optionally, you can pass in a specific `CKZone` (`zoneID`) or a `List<CKFilter>` (`filters`) to filter the results. You can also pass in a bool (`preloadAssets`) to denote whether or not to preload any `CKAsset` fields in fetched records.
+When creating the operation, you must pass in a local type for the operation to receive. For example: `CKRecordQueryOperation<Schedule>(CKDatabase.PUBLIC_DATABASE)` would fetch all `Schedule` records from the public database. Optionally, you can pass in a specific `CKZone` (`zoneID`) or a `List<CKFilter>` (`filters`) to filter the results. You can also pass in a bool (`preloadAssets`) to indicate whether any `CKAsset` fields in fetched records should be preloaded.
 
 Returned from the `execute()` call is an array of local objects with the type provided to the operation.
+
+### Additional Parameters
+
+In addition to the multiple kinds of operations, CloudKit provides several sorting and filtering options within its API, represented in this library by the classes below.
+
+#### CKFilter
+
+Filters are created through four main values: the name of the CloudKit record field to compare (`fieldName`), the `CKFieldType` of that record field (`fieldType`), the value to be compared against (`fieldValue`), and the `CKComparator` object for the desired comparison.
+
+Filters can also be ... as they are typically passed into operations as a list.
 
 ## Import points
 
