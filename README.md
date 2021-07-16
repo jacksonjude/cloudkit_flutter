@@ -4,7 +4,7 @@ CloudKit support for Flutter via [CloudKit Web Services](https://developer.apple
 
 ## Support
 
-This library currently only supports Android (and iOS, although its usefulness there is fairly limited). The lack of Flutter Web support is due to one of the dependencies, [webview_flutter](https://pub.dev/packages/webview_flutter/score "webview_flutter"), not supporting the Flutter Web platform 🙄.
+Currently, this library only supports Android (and iOS, although its usefulness there is fairly limited). The lack of Flutter Web support is due to one of the dependencies, [webview_flutter](https://pub.dev/packages/webview_flutter/score "webview_flutter"), not supporting the Flutter Web platform 🙄.
 
 ## Setup
 
@@ -145,15 +145,29 @@ When creating the operation, you must pass in a local type for the operation to 
 
 Returned from the `execute()` call is an array of local objects with the type provided to the operation.
 
-### Additional Parameters
+### Request Models
 
-In addition to the multiple kinds of operations, CloudKit provides several sorting and filtering options within its API, represented in this library by the classes below.
+In addition to the multiple kinds of operations, CloudKit provides several request parameters within its API, represented in this library by the classes below.
 
 #### CKFilter
 
 Filters are created through four main values: the name of the CloudKit record field to compare (`fieldName`), the `CKFieldType` of that record field (`fieldType`), the value to be compared against (`fieldValue`), and the `CKComparator` object for the desired comparison.
 
-Filters can also be ... as they are typically passed into operations as a list.
+#### CKSortDescriptor
+
+Sort descriptors are created through two main values: the name of the CloudKit record field to sort by (`fieldName`) and a boolean to indicate the direction (`ascending`).
+
+#### CKZone
+
+Zone objects are currently only containers for a zone ID string (`zoneName`), and can be used to specify a specific CloudKit zone for an operation.
+
+#### CKQuery
+
+Query objects are containers to store the CloudKit record type (`recordType`), a `List<CKFilter>` (`filterBy`), and a `List<CKSortDescriptor>` (`sortBy`).
+
+#### CKRecordQueryRequest
+
+Record query request objects represent the information needed to perform a CKRecordQueryOperation, including a `CKZone` (`zoneID`), a result limit (`resultsLimit`), and a `CKQuery` object (`query`).
 
 ## Import points
 
