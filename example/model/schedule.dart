@@ -11,10 +11,10 @@ class Schedule
   String? code;
 
   @CKFieldAnnotation("periodTimes")
-  List<String>? blockTimes;
+  List<String>? periodTimes;
 
   @CKFieldAnnotation("periodNumbers")
-  List<int>? blockNumbers;
+  List<int>? periodNumbers;
 
   @override
   String toString() {
@@ -22,8 +22,8 @@ class Schedule
 
     stringOutput += "Schedule: {";
     stringOutput += "\n  code: " + (code ?? "null");
-    stringOutput += "\n  blockTimes: " + (blockTimes ?? "null").toString();
-    stringOutput += "\n  blockNumbers: " + (blockNumbers ?? "null").toString();
+    stringOutput += "\n  periodTimes: " + (periodTimes ?? "null").toString();
+    stringOutput += "\n  periodNumbers: " + (periodNumbers ?? "null").toString();
     stringOutput += "\n}";
 
     return stringOutput;
