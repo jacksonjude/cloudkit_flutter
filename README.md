@@ -117,9 +117,9 @@ class Gender extends CKCustomFieldType<int>
 
 ### Model Classes - Reflection Setup
 
-**Whenever you make changes to your model classes or `CKCustomFieldType` subclasses**, you must regenerate object code to allow for reflection to be used within the library. To do this simply run `flutter pub run build_runner build lib` from the root folder of your Flutter project.
+**Whenever you make changes to your model classes or `CKCustomFieldType` subclasses**, you must regenerate object code to allow for reflection to be used within the library. To do this simply run `flutter pub run build_runner build lib` from the root folder of your Flutter project. Then, call `initializeReflectable()` (found within generated `*.reflectable.dart` files) at the start of your app before any other library calls are made.
 
-Finally, you must indicate to the `CKRecordParser` class which model classes should be scanned. Do this via the `CKRecordParser.createRecordStructures(List<Type>)` function, listing the names of the local model classes. To scan the Schedule class for example, we would call `CKRecordParser.createRecordStructures([Schedule])`. This call should preferably be done in conjunction with the API Initialization, as described above.
+Finally, you must indicate to the `CKRecordParser` class which model classes should be scanned. Before doing this, ensure that `initializeReflectable()` has been called. Then, scan the model classes via the `CKRecordParser.createRecordStructures(List<Type>)` function, listing the names of the local model classes. To scan the Schedule class for example, we would call `CKRecordParser.createRecordStructures([Schedule])`. This call should preferably be done in conjunction with the API Initialization, as described above.
 
 ## Usage
 
@@ -159,7 +159,7 @@ Sort descriptors are created through two main values: the name of the CloudKit r
 
 #### CKZone
 
-Zone objects are currently only containers for a zone ID string (`zoneName`), and can be used to specify a specific CloudKit zone for an operation.
+Zone objects are currently only containers for a zone ID string (`zoneName`), and can be used to specify a specific CloudKit zone for an operation. A zone object with an empty zone name will be set to the default zone.
 
 #### CKQuery
 
