@@ -1,3 +1,4 @@
+/// A class for CloudKit-related constants.
 class CKConstants
 {
   static const API_ENDPOINT = "https://api.apple-cloudkit.com";
@@ -17,6 +18,7 @@ class CKConstants
 
   static const DEFAULT_ZONE_NAME = "_defaultZone";
 
+  /// Test if a CloudKit record field name is a system field name.
   static bool isSystemFieldName(String fieldName)
   {
     switch (fieldName)
@@ -35,6 +37,7 @@ class CKConstants
   }
 }
 
+/// A container class to denote the CloudKit environment as a string.
 class CKEnvironment
 {
   static const PRODUCTION_ENVIRONMENT = CKDatabase("production");
@@ -48,6 +51,7 @@ class CKEnvironment
   String toString() => _environment;
 }
 
+/// A container class to denote the CloudKit database as a string.
 class CKDatabase
 {
   static const PUBLIC_DATABASE = CKDatabase("public");

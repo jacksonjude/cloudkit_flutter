@@ -1,5 +1,6 @@
 import 'package:reflectable/reflectable.dart';
 
+/// Custom [Reflectable] subclass with invokingCapability, typingCapability, and reflectedTypeCapability.
 class Reflector extends Reflectable
 {
   const Reflector() : super(
@@ -9,4 +10,5 @@ class Reflector extends Reflectable
   );
 }
 
+/// Singleton instance of the custom [Reflector] class.
 const reflector = const Reflector();

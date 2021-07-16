@@ -8,6 +8,7 @@ import 'request_models/ck_query.dart';
 import 'request_models/ck_filter.dart';
 import '../parsing/ck_record_parser.dart';
 
+/// The status after an operation has been executed.
 enum CKOperationState
 {
   success,
@@ -15,6 +16,7 @@ enum CKOperationState
   unknownError
 }
 
+/// Contains a [CKOperationState] with the response from an operation.
 class CKOperationCallback
 {
   final CKOperationState state;
@@ -23,23 +25,25 @@ class CKOperationCallback
   CKOperationCallback(this.state, {this.response});
 }
 
+/// Denotes the protocol type of an operation.
 enum CKOperationProtocol
 {
   get,
   post
 }
 
+/// The base class for an operation
 abstract class CKOperation
 {
-  final CKAPIManager apiManager;
-  final CKDatabase database;
-  final BuildContext? context; // to launch web view authentication, if needed
+  final CKAPIManager _apiManager;
+  final CKDatabase _database;
+  final BuildContext? _context; // to launch web view authentication, if needed
 
-  CKOperation(CKDatabase database, {CKAPIManager? apiManager, BuildContext? context}) : apiManager = apiManager ?? CKAPIManager.shared(), database = database, context = context;
+  CKOperation(CKDatabase database, {CKAPIManager? apiManager, BuildContext? context}) : _apiManager = apiManager ?? CKAPIManager.shared(), _database = database, _context = context;
 
-  String getAPIPath();
-  CKOperationProtocol getAPIProtocol();
+  String _getAPIPath();
 
+  /// Execute the operation.
   Future<CKOperationCallback> execute();
 }
 
@@ -47,21 +51,20 @@ abstract class CKGetOperation extends CKOperation
 {
   CKGetOperation(CKDatabase database, {CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context);
 
-  CKOperationProtocol getAPIProtocol() => CKOperationProtocol.get;
-
+  /// Execute the GET operation
   @override
-  Future<CKOperationCallback> execute() async => await this.apiManager.callAPI(database, getAPIPath(), getAPIProtocol(), context: context);
+  Future<CKOperationCallback> execute() async => await this._apiManager.callAPI(_database, _getAPIPath(), CKOperationProtocol.get, context: _context);
 }
 
 abstract class CKPostOperation extends CKOperation
 {
   CKPostOperation(CKDatabase database, {CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context);
 
-  Map<String,dynamic>? getBody();
-  CKOperationProtocol getAPIProtocol() => CKOperationProtocol.post;
+  Map<String,dynamic>? _getBody();
 
+  /// Execute the POST operation.
   @override
-  Future<CKOperationCallback> execute() async => await this.apiManager.callAPI(database, getAPIPath(), getAPIProtocol(), operationBody: getBody(), context: context);
+  Future<CKOperationCallback> execute() async => await this._apiManager.callAPI(_database, _getAPIPath(), CKOperationProtocol.post, operationBody: _getBody(), context: _context);
 }
 
 class CKCurrentUserOperation extends CKGetOperation
@@ -69,8 +72,9 @@ class CKCurrentUserOperation extends CKGetOperation
   CKCurrentUserOperation(CKDatabase database, {CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context);
 
   @override
-  String getAPIPath() => "users/current";
+  String _getAPIPath() => "users/current";
 
+  /// Execute the current user operation.
   @override
   Future<CKOperationCallback> execute() async
   {
@@ -84,22 +88,23 @@ class CKCurrentUserOperation extends CKGetOperation
 
 class CKRecordQueryOperation<T extends Object> extends CKPostOperation
 {
-  late final CKRecordQueryRequest recordQueryRequest;
-  late final bool shouldPreloadAssets;
+  late final CKRecordQueryRequest _recordQueryRequest;
+  late final bool _shouldPreloadAssets;
 
   CKRecordQueryOperation(CKDatabase database, {CKRecordQueryRequest? queryRequest, CKZone? zoneID, int? resultsLimit, List<CKFilter>? filters, bool? preloadAssets, CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context)
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
-    this.recordQueryRequest = queryRequest ?? CKRecordQueryRequest(zoneID ?? CKZone(), resultsLimit, CKQuery(recordStructure.ckRecordType, filterBy: filters));
-    this.shouldPreloadAssets = preloadAssets ?? false;
+    this._recordQueryRequest = queryRequest ?? CKRecordQueryRequest(zoneID ?? CKZone(), resultsLimit, CKQuery(recordStructure.ckRecordType, filterBy: filters));
+    this._shouldPreloadAssets = preloadAssets ?? false;
   }
 
   @override
-  String getAPIPath() => "records/query";
+  String _getAPIPath() => "records/query";
 
   @override
-  Map<String,dynamic>? getBody() => recordQueryRequest.toJSON();
+  Map<String,dynamic>? _getBody() => _recordQueryRequest.toJSON();
 
+  /// Execute the record query operation.
   @override
   Future<CKOperationCallback> execute() async
   {
@@ -109,9 +114,9 @@ class CKRecordQueryOperation<T extends Object> extends CKPostOperation
     if (apiCallback.state == CKOperationState.success)
     {
       await Future.forEach(apiCallback.response["records"], (recordMap) async {
-        var newObject = CKRecordParser.recordToLocalObject<T>(recordMap as Map<String,dynamic>, database: database);
+        var newObject = CKRecordParser.recordToLocalObject<T>(recordMap as Map<String,dynamic>, database: _database);
 
-        if (shouldPreloadAssets) await CKRecordParser.preloadAssets<T>(newObject);
+        if (_shouldPreloadAssets) await CKRecordParser.preloadAssets<T>(newObject);
 
         newLocalObjects.add(newObject);
       });

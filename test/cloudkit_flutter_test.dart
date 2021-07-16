@@ -66,7 +66,7 @@ void main() {
   ]);
 
   test('record structure conversion', () {
-    expect(CKRecordParser.recordStructures[Schedule].toString(), scheduleStructureString);
+    expect(CKRecordParser.getRecordStructureFromLocalType(Schedule).toString(), scheduleStructureString);
 
     Schedule localSchedule = CKRecordParser.recordToLocalObject<Schedule>({
       "recordName": "3D017D61-02FA-4D6E-BE27-BEE14C9057A5",

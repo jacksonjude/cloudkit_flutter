@@ -2,23 +2,26 @@ import 'package:cloudkit_flutter/ck_constants.dart';
 
 import '../../parsing/types/ck_field_type.dart';
 
+/// A representation of a CloudKit filter.
 class CKFilter
 {
-  final CKComparator comparator;
-  final String fieldName;
-  final Map<String,dynamic> fieldValueDictionary;
-  final double? distance;
+  final CKComparator _comparator;
+  final String _fieldName;
+  final Map<String,dynamic> _fieldValueDictionary;
+  final double? _distance;
 
-  CKFilter(this.fieldName, CKFieldType fieldType, dynamic fieldValue, this.comparator, {this.distance}) : fieldValueDictionary = {'value': {fieldName: fieldValue}, 'type': fieldType.record};
+  CKFilter(this._fieldName, CKFieldType fieldType, dynamic fieldValue, this._comparator, {double? distance}) : _fieldValueDictionary = {'value': {_fieldName: fieldValue}, 'type': fieldType.record}, _distance = distance;
 
+  /// Convert the filter to JSON.
   Map<String, dynamic> toJSON() => {
-    'comparator': comparator.comparatorString,
-    (CKConstants.isSystemFieldName(fieldName) ? 'systemFieldName' : 'fieldName'): fieldName,
-    'fieldValue': fieldValueDictionary,
-    'distance': distance
+    'comparator': _comparator._comparatorString,
+    (CKConstants.isSystemFieldName(_fieldName) ? 'systemFieldName' : 'fieldName'): _fieldName,
+    'fieldValue': _fieldValueDictionary,
+    'distance': _distance
   };
 }
 
+/// A container class for the types of CloudKit comparators used in [CKFilter] objects
 class CKComparator
 {
   static const EQUALS = CKComparator("EQUALS");
@@ -42,7 +45,7 @@ class CKComparator
   static const LIST_CONTAINS_ALL = CKComparator("LIST_CONTAINS_ALL");
   static const NOT_LIST_CONTAINS_ALL = CKComparator("NOT_LIST_CONTAINS_ALL");
 
-  final String comparatorString;
+  final String _comparatorString;
 
-  const CKComparator(this.comparatorString);
+  const CKComparator(this._comparatorString);
 }

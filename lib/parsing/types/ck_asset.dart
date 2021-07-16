@@ -3,18 +3,20 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
+/// A representation of a CloudKit asset.
 class CKAsset
 {
-  String fileChecksum;
-  String referenceChecksum;
-  String wrappingKey;
+  /// The size of the asset.
   int size;
 
+  /// The download URL for the asset.
   String? downloadURL;
+  /// The cached version of the asset.
   Uint8List? cachedData;
 
-  CKAsset(this.fileChecksum, this.referenceChecksum, this.wrappingKey, this.size, {this.downloadURL});
+  CKAsset(this.size, {this.downloadURL});
 
+  /// Download the asset.
   Future<Uint8List?> fetchAsset() async
   {
     if (downloadURL == null) return null;
@@ -26,6 +28,7 @@ class CKAsset
     return response.bodyBytes;
   }
 
+  /// Return the cached version of the asset as an image, if possible.
   MemoryImage? getAsImage()
   {
     if (cachedData == null) return null;

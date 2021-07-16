@@ -1,15 +1,14 @@
 import '../../ck_constants.dart';
 
+/// A container class for a CloudKit zone ID.
 class CKZone
 {
-  late final String zoneName;
+  final String _zoneName;
 
-  CKZone([String? zoneName])
-  {
-    this.zoneName = zoneName ?? CKConstants.DEFAULT_ZONE_NAME;
-  }
+  CKZone([String? zoneName]) : this._zoneName = zoneName ?? CKConstants.DEFAULT_ZONE_NAME;
 
+  /// Convert the zone to JSON.
   Map<String, dynamic> toJSON() => {
-    'zoneName': zoneName
+    'zoneName': _zoneName
   };
 }

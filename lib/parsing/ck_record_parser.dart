@@ -12,10 +12,12 @@ import 'ck_field_structure.dart';
 import 'types/ck_field_type.dart';
 import '../api/request_models/ck_zone.dart';
 
+/// The class that handles local model class annotation parsing.
 class CKRecordParser
 {
-  static Map<Type,CKRecordStructure> recordStructures = {};
+  static Map<Type,CKRecordStructure> _recordStructures = {};
 
+  /// Create [CKRecordStructure] objects from the provided annotated model classes.
   static void createRecordStructures(List<Type> classTypes)
   {
     Map<Type,CKRecordStructure> recordStructures = {};
@@ -49,7 +51,7 @@ class CKRecordParser
       recordStructures[currentType] = recordStructure;
     });
 
-    CKRecordParser.recordStructures = recordStructures;
+    CKRecordParser._recordStructures = recordStructures;
   }
 
   static bool _isTypeInArray<T>(List<Object> array)
@@ -62,6 +64,7 @@ class CKRecordParser
     return array.firstWhere((element) => element is T) as T;
   }
 
+  /// Convert a CloudKit record JSON object to a local model object.
   static T recordToLocalObject<T extends Object>(Map<String,dynamic> recordData, {CKDatabase? database})
   {
     recordData = _recordToSimpleJSON(recordData);
@@ -83,6 +86,7 @@ class CKRecordParser
     return newLocalObject as T;
   }
 
+  /// Convert a single CloudKit record field to a local value.
   static dynamic convertToLocalValue(CKFieldType field, dynamic rawValue, {CKDatabase? database})
   {
     var convertedValue = rawValue;
@@ -120,7 +124,7 @@ class CKRecordParser
         break;
 
       case CKFieldType.ASSET_TYPE:
-        var newAsset = CKAsset(rawValue["fileChecksum"], rawValue["referenceChecksum"], rawValue["wrappingKey"], rawValue["size"], downloadURL: rawValue["downloadURL"]);
+        var newAsset = CKAsset(rawValue["size"], downloadURL: rawValue["downloadURL"]);
         convertedValue = newAsset;
         break;
 
@@ -165,6 +169,7 @@ class CKRecordParser
     });
   }
 
+  /// Convert a local model object to a CloudKit record JSON object.
   static Map<String,dynamic> localObjectToRecord<T extends Object>(T localObject)
   {
     var recordStructure = getRecordStructureFromLocalType(T);
@@ -185,6 +190,7 @@ class CKRecordParser
     return _simpleJSONToRecord(recordStructure.ckRecordType, newRecordObject);
   }
 
+  /// Convert a single local value to a CloudKit record field.
   static dynamic convertToRecordValue(CKFieldType field, dynamic rawValue)
   {
     var convertedValue;
@@ -232,14 +238,16 @@ class CKRecordParser
 
   static CKRecordStructure _getRecordStructure(Type? localType, String? ckRecordType)
   {
-    return CKRecordParser.recordStructures.values.firstWhere((recordData) => recordData.localType == localType || recordData.ckRecordType == ckRecordType);
+    return CKRecordParser._recordStructures.values.firstWhere((recordData) => recordData.localType == localType || recordData.ckRecordType == ckRecordType);
   }
 
+  /// Get a [CKRecordStructure] that matches a given local Type
   static CKRecordStructure getRecordStructureFromLocalType(Type localType)
   {
     return _getRecordStructure(localType, null);
   }
 
+  /// Get a [CKRecordStructure] that matches a given record type string
   static CKRecordStructure getRecordStructureFromRecordType(String ckRecordType)
   {
     return _getRecordStructure(null, ckRecordType);
