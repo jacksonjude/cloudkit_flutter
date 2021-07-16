@@ -16,6 +16,23 @@ class CKConstants
   static const RECORD_FIELDS_FIELD = "fields";
 
   static const DEFAULT_ZONE_NAME = "_defaultZone";
+
+  static bool isSystemFieldName(String fieldName)
+  {
+    switch (fieldName)
+    {
+      case "recordName":
+      case "share":
+      case "parent":
+      case "createdUserRecordName":
+      case "createdTimestamp":
+      case "modifiedTimestamp":
+      case "modifiedUserRecordName":
+        return true;
+    }
+
+    return false;
+  }
 }
 
 class CKEnvironment

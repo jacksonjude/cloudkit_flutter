@@ -1,3 +1,5 @@
+import 'package:cloudkit_flutter/ck_constants.dart';
+
 import '../../parsing/types/ck_field_type.dart';
 
 class CKFilter
@@ -7,11 +9,11 @@ class CKFilter
   final Map<String,dynamic> fieldValueDictionary;
   final double? distance;
 
-  CKFilter(this.comparator, this.fieldName, dynamic fieldValue, CKFieldType fieldType, {this.distance}) : fieldValueDictionary = {'value': {fieldName: fieldValue}, 'type': fieldType.record};
+  CKFilter(this.fieldName, CKFieldType fieldType, dynamic fieldValue, this.comparator, {this.distance}) : fieldValueDictionary = {'value': {fieldName: fieldValue}, 'type': fieldType.record};
 
   Map<String, dynamic> toJSON() => {
     'comparator': comparator.comparatorString,
-    'systemFieldName': fieldName,
+    (CKConstants.isSystemFieldName(fieldName) ? 'systemFieldName' : 'fieldName'): fieldName,
     'fieldValue': fieldValueDictionary,
     'distance': distance
   };
