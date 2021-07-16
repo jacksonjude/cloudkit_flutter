@@ -1,3 +1,4 @@
+import 'package:cloudkit_flutter/ck_constants.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'ck_api_manager.dart';
@@ -31,10 +32,10 @@ enum CKOperationProtocol
 abstract class CKOperation
 {
   final CKAPIManager apiManager;
-  final String database;
+  final CKDatabase database;
   final BuildContext? context; // to launch web view authentication, if needed
 
-  CKOperation(String database, {CKAPIManager? apiManager, BuildContext? context}) : apiManager = apiManager ?? CKAPIManager.shared(), database = database, context = context;
+  CKOperation(CKDatabase database, {CKAPIManager? apiManager, BuildContext? context}) : apiManager = apiManager ?? CKAPIManager.shared(), database = database, context = context;
 
   String getAPIPath();
   CKOperationProtocol getAPIProtocol();
@@ -44,7 +45,7 @@ abstract class CKOperation
 
 abstract class CKGetOperation extends CKOperation
 {
-  CKGetOperation(String database, {CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context);
+  CKGetOperation(CKDatabase database, {CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context);
 
   CKOperationProtocol getAPIProtocol() => CKOperationProtocol.get;
 
@@ -54,7 +55,7 @@ abstract class CKGetOperation extends CKOperation
 
 abstract class CKPostOperation extends CKOperation
 {
-  CKPostOperation(String database, {CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context);
+  CKPostOperation(CKDatabase database, {CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context);
 
   Map<String,dynamic>? getBody();
   CKOperationProtocol getAPIProtocol() => CKOperationProtocol.post;
@@ -65,7 +66,7 @@ abstract class CKPostOperation extends CKOperation
 
 class CKCurrentUserOperation extends CKGetOperation
 {
-  CKCurrentUserOperation(String database, {CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context);
+  CKCurrentUserOperation(CKDatabase database, {CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context);
 
   @override
   String getAPIPath() => "users/current";
@@ -86,10 +87,10 @@ class CKRecordQueryOperation<T extends Object> extends CKPostOperation
   late final CKRecordQueryRequest recordQueryRequest;
   late final bool shouldPreloadAssets;
 
-  CKRecordQueryOperation(String database, {CKRecordQueryRequest? queryRequest, CKZone? zoneID, List<CKFilter>? filters, bool? preloadAssets, CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context)
+  CKRecordQueryOperation(CKDatabase database, {CKRecordQueryRequest? queryRequest, CKZone? zoneID, int? resultsLimit, List<CKFilter>? filters, bool? preloadAssets, CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context)
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
-    this.recordQueryRequest = queryRequest ?? CKRecordQueryRequest(zoneID ?? CKZone(), null, CKQuery(recordStructure.ckRecordType, filterBy: filters));
+    this.recordQueryRequest = queryRequest ?? CKRecordQueryRequest(zoneID ?? CKZone(), resultsLimit, CKQuery(recordStructure.ckRecordType, filterBy: filters));
     this.shouldPreloadAssets = preloadAssets ?? false;
   }
 

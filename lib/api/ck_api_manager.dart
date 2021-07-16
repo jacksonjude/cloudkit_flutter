@@ -13,7 +13,7 @@ class CKAPIManager
 {
   late final String ckContainer;
   late final String ckAPIToken;
-  late final String environment;
+  late final CKEnvironment environment;
   late final String redirectURLPattern;
 
   String? ckAuthURL;
@@ -27,7 +27,7 @@ class CKAPIManager
     return _instance!;
   }
 
-  static void initManager(String ckContainer, String ckAPIToken, String environment, {CKAPIManager? manager})
+  static void initManager(String ckContainer, String ckAPIToken, CKEnvironment environment, {CKAPIManager? manager})
   {
     var managerToInit = manager ?? CKAPIManager.shared();
 
@@ -39,7 +39,7 @@ class CKAPIManager
     managerToInit.fetchWebAuthToken();
   }
 
-  Future<CKOperationCallback> callAPI(String database, String operationPath, CKOperationProtocol operationProtocol, {Map<String,dynamic>? operationBody, BuildContext? context}) async
+  Future<CKOperationCallback> callAPI(CKDatabase database, String operationPath, CKOperationProtocol operationProtocol, {Map<String,dynamic>? operationBody, BuildContext? context}) async
   {
     if (this.ckAuthURL == null || this.ckWebAuthToken != null)
     {
@@ -50,7 +50,7 @@ class CKAPIManager
         getCurrentUserURIQueryParameters[CKConstants.WEB_AUTH_TOKEN_PARAMETER] = this.ckWebAuthToken!;
       }
 
-      var originalURI = Uri.parse(CKConstants.API_URL_BASE + "/" + this.ckContainer + "/" + this.environment + "/" + database + "/" + operationPath);
+      var originalURI = Uri.parse(CKConstants.API_URL_BASE + "/" + this.ckContainer + "/" + this.environment.toString() + "/" + database.toString() + "/" + operationPath);
       var modifiedURIWithParameters = Uri.https(originalURI.authority, originalURI.path, getCurrentUserURIQueryParameters);
 
       var response;

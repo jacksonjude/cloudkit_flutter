@@ -7,14 +7,14 @@ import 'ck_field_type.dart';
 class CKReference
 {
   final String referenceUUID;
-  final String database;
+  final CKDatabase database;
   final CKZone zoneID;
 
   CKReference(this.referenceUUID, this.database, {CKZone? zoneID}) : zoneID = zoneID ?? CKZone();
 
   Future<T?> fetchFromCloud<T extends Object>() async
   {
-    var referenceUUIDFilter = CKFilter(CKComparator.EQUALS, CKConstants.RECORD_NAME_FIELD, referenceUUID, CKFieldType.STRING_TYPE);
+    var referenceUUIDFilter = CKFilter(CKConstants.RECORD_NAME_FIELD, CKFieldType.STRING_TYPE, referenceUUID, CKComparator.EQUALS);
     var queryOperation = CKRecordQueryOperation<T>(database, zoneID: zoneID, filters: [referenceUUIDFilter]);
     var operationCallback = await queryOperation.execute();
 

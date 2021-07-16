@@ -37,13 +37,27 @@ class CKConstants
 
 class CKEnvironment
 {
-  static const PRODUCTION_ENVIRONMENT = "production";
-  static const DEVELOPMENT_ENVIRONMENT = "development";
+  static const PRODUCTION_ENVIRONMENT = CKDatabase("production");
+  static const DEVELOPMENT_ENVIRONMENT = CKDatabase("development");
+
+  final String _environment;
+
+  const CKEnvironment(this._environment);
+
+  @override
+  String toString() => _environment;
 }
 
 class CKDatabase
 {
-  static const PUBLIC_DATABASE = "public";
-  static const SHARED_DATABASE = "shared";
-  static const PRIVATE_DATABASE = "private";
+  static const PUBLIC_DATABASE = CKDatabase("public");
+  static const SHARED_DATABASE = CKDatabase("shared");
+  static const PRIVATE_DATABASE = CKDatabase("private");
+
+  final String _database;
+
+  const CKDatabase(this._database);
+
+  @override
+  String toString() => _database;
 }

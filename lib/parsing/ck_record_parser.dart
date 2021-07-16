@@ -62,7 +62,7 @@ class CKRecordParser
     return array.firstWhere((element) => element is T) as T;
   }
 
-  static T recordToLocalObject<T extends Object>(Map<String,dynamic> recordData, {String? database})
+  static T recordToLocalObject<T extends Object>(Map<String,dynamic> recordData, {CKDatabase? database})
   {
     recordData = _recordToSimpleJSON(recordData);
 
@@ -83,7 +83,7 @@ class CKRecordParser
     return newLocalObject as T;
   }
 
-  static dynamic convertToLocalValue(CKFieldType field, dynamic rawValue, {String? database})
+  static dynamic convertToLocalValue(CKFieldType field, dynamic rawValue, {CKDatabase? database})
   {
     var convertedValue = rawValue;
 
