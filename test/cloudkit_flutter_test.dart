@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cloudkit_flutter/cloudkit_flutter.dart';
-import 'cloudkit_flutter_test.reflectable.dart';
+
+import 'cloudkit_flutter_test.reflectable.dart'; // Import generated code
+// Run `flutter pub run build_runner build test` from the root directory to generate cloudkit_flutter_test.reflectable.dart code
 
 import 'model/schedule.dart';
 import 'model/week_schedule.dart';
@@ -27,7 +29,7 @@ const scheduleStructureString =
       }
     }, 
     CKFieldData: {
-      localName: blockTimes
+      localName: periodTimes
       ckName: periodTimes
       type: CKFieldType: {
         local: List<String>
@@ -35,7 +37,7 @@ const scheduleStructureString =
       }
     }, 
     CKFieldData: {
-      localName: blockNumbers
+      localName: periodNumbers
       ckName: periodNumbers
       type: CKFieldType: {
         local: List<int>
@@ -47,8 +49,8 @@ const scheduleStructureString =
 const scheduleObjectString =
 """Schedule: {
   code: T4.
-  blockTimes: [08:30-10:15, 10:20-10:40, 10:45-12:30]
-  blockNumbers: [1, 9, 8]
+  periodTimes: [08:30-10:15, 10:20-10:40, 10:45-12:30]
+  periodNumbers: [1, 9, 8]
 }""";
 
 const weekScheduleObjectString =
