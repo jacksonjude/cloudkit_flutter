@@ -5,3 +5,8 @@
 - Built-in Sign in with iCloud authentication (via webview_flutter)
 - `CKCurrentUserOperation` to fetch current user id (good test for CloudKit sign-in)
 - `CKRecordQueryOperation` with `CKFilter`, `CKSortDescriptor`, and `CKZone` support
+
+## 0.1.1
+
+- Fixed error on SharedPreferences access (`fetchWebAuthToken` & `saveWebAuthToken`)
+- Updated README & pubspec repo field
