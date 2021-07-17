@@ -117,9 +117,9 @@ class Gender extends CKCustomFieldType<int>
 
 ### Model Classes - Reflection Setup
 
-**Whenever you make changes to your model classes or `CKCustomFieldType` subclasses**, you must regenerate object code to allow for reflection to be used within the library. To do this simply run `flutter pub run build_runner build lib` from the root folder of your Flutter project. Then, call `initializeReflectable()` (found within generated `*.reflectable.dart` files) at the start of your app before any other library calls are made.
+**Whenever you make changes to your model classes or `CKCustomFieldType` subclasses**, you must regenerate object code to allow for reflection to be used within the library. **First, ensure that the `build_runner` package is installed in your app's pubspec, as it is required to run the following command.** Next, generate the object code by running `flutter pub run build_runner build lib` from the root folder of your Flutter project. 
 
-Finally, you must indicate to the `CKRecordParser` class which model classes should be scanned. Before doing this, ensure that `initializeReflectable()` has been called. Then, scan the model classes via the `CKRecordParser.createRecordStructures(List<Type>)` function, listing the names of the local model classes. To scan the Schedule class for example, we would call `CKRecordParser.createRecordStructures([Schedule])`. This call should preferably be done in conjunction with the API Initialization, as described above.
+After the code has been generated, call `initializeReflectable()` (found within generated `*.reflectable.dart` files) at the start of your app before any other library calls are made. Finally, you must indicate to the `CKRecordParser` class which model classes should be scanned. Before doing this, ensure that `initializeReflectable()` has been called. Then, scan the model classes via the `CKRecordParser.createRecordStructures(List<Type>)` function, listing the names of the local model classes. To scan the Schedule class for example, we would call `CKRecordParser.createRecordStructures([Schedule])`. This call should preferably be done in conjunction with the API Initialization, as described above.
 
 ## Usage
 
