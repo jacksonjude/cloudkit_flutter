@@ -167,7 +167,7 @@ Query objects are containers to store the CloudKit record type (`recordType`), a
 
 #### CKRecordQueryRequest
 
-Record query request objects represent the information needed to perform a CKRecordQueryOperation, including a `CKZone` (`zoneID`), a result limit (`resultsLimit`), and a `CKQuery` object (`query`).
+Record query request objects represent the information needed to perform a `CKRecordQueryOperation`, including a `CKZone` (`zoneID`), a result limit (`resultsLimit`), and a `CKQuery` object (`query`).
 
 ## Import points
 
@@ -179,12 +179,12 @@ Includes all exposed classes.
 
 ### cloudkit_flutter_init.dart
 
-Includes classes necessary to initialize the API manager (CKAPIManager) and record parser (CKRecordParser).
+Includes classes necessary to initialize the API manager (`CKAPIManager`) and record parser (`CKRecordParser`).
 
 ### cloudkit_flutter_model.dart
 
-Includes classes necessary to annotate model files (CKRecordTypeAnnotation, CKRecordNameAnnotation, CKFieldAnnotation), use special field types (CKReference, CKAsset), and create custom field types (CKCustomFieldType).
+Includes classes necessary to annotate model files (`CKRecordTypeAnnotation`, `CKRecordNameAnnotation`, `CKFieldAnnotation`), use special field types (`CKReference`, `CKAsset`), and create custom field types (`CKCustomFieldType`).
 
 ### cloudkit_flutter_api.dart
 
-Includes classes necessary to call the CloudKit API (CKOperation + subclasses, CKZone, CKFilter, CKSortDescriptor).
+Includes classes necessary to call the CloudKit API (`CKOperation` + subclasses, `CKZone`, `CKFilter`, `CKSortDescriptor`).
