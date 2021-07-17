@@ -1,3 +1,8 @@
+## 0.1.2
+
+- Made `CKAPIManager.initManager` function async to account for `fetchWebAuthToken` being async
+- Updated README
+
 ## 0.1.1
 
 - Fixed error on SharedPreferences access (`fetchWebAuthToken` & `saveWebAuthToken`)
