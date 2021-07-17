@@ -40,17 +40,17 @@ import 'package:cloudkit_flutter/cloudkit_flutter_model.dart';
 @CKRecordTypeAnnotation("Schedule")  // The name of the CloudKit record type is included in the annotation
 class Schedule
 {
-	@CKRecordNameAnnotation() // No CloudKit record field name is needed as the field is always 'recordName'
-	String? uuid;
-	
-	@CKFieldAnnotation("scheduleCode") // The name of the CloudKit record field is included in the annotation
-	String? code;
-	
-	@CKFieldAnnotation("periodTimes")
-	List<String>? blockTimes;
-	
-	@CKFieldAnnotation("periodNumbers")
-	List<int>? blockNumbers;
+  @CKRecordNameAnnotation() // No CloudKit record field name is needed as the field is always 'recordName'
+  String? uuid;
+  
+  @CKFieldAnnotation("scheduleCode") // The name of the CloudKit record field is included in the annotation
+  String? code;
+  
+  @CKFieldAnnotation("periodTimes")
+  List<String>? blockTimes;
+  
+  @CKFieldAnnotation("periodNumbers")
+  List<int>? blockNumbers;
 }
 ```
 
@@ -93,25 +93,25 @@ import 'package:cloudkit_flutter/cloudkit_flutter_model.dart';
 @reflector
 class Gender extends CKCustomFieldType<int>
 {
-	// Static instances of Gender with a raw value and name
-	static final female = Gender.withName(0, "Female");
-	static final male = Gender.withName(1, "Male");
-	static final other = Gender.withName(2, "Other");
-	static final unknown = Gender.withName(3, "Unknown");
-	static final genders = [female, male, other, unknown];
-	
-	String name;
-	
-	// Required constructors
-	Gender() : name = unknown.name, super.fromRecordField(unknown.rawValue);
-	Gender.fromRecordField(int raw) : name = genders[raw].name, super.fromRecordField(raw);
-	
-	// Used to create static instances above
-	Gender.withName(int raw, String name) : name = name, super.fromRecordField(raw);
-	
-	// The default toString() for CKCustomFieldType outputs the rawValue, but here it makes more sense to output the name
-	@override
-	String toString() => name;
+  // Static instances of Gender with a raw value and name
+  static final female = Gender.withName(0, "Female");
+  static final male = Gender.withName(1, "Male");
+  static final other = Gender.withName(2, "Other");
+  static final unknown = Gender.withName(3, "Unknown");
+  static final genders = [female, male, other, unknown];
+  
+  String name;
+  
+  // Required constructors
+  Gender() : name = unknown.name, super.fromRecordField(unknown.rawValue);
+  Gender.fromRecordField(int raw) : name = genders[raw].name, super.fromRecordField(raw);
+  
+  // Used to create static instances above
+  Gender.withName(int raw, String name) : name = name, super.fromRecordField(raw);
+  
+  // The default toString() for CKCustomFieldType outputs the rawValue, but here it makes more sense to output the name
+  @override
+  String toString() => name;
 }
 ```
 
