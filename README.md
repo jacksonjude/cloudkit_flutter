@@ -17,7 +17,7 @@ Before calls to the CloudKit API can be made, three values must be provided to t
 - CloudKit API Token: A token which must be created via the CloudKit dashboard. **Importantly, you must select the last option ('cloudkit-' + container id + '://') within 'URL Redirect' for the 'Sign in Callback'. The custom URL can be any short string, such as 'redirect'.**
 - CloudKit Environment: Changes whether the production or development environment is used. Corresponding strings are provided in the `CKEnvironment` class.
 
-To initialize the manager, these three values must be passed into `CKAPIManager.initManager(String container, String apiToken, String environment)`. This call should preferably be done in conjunction with the reflection setup initialization, as described below.
+To initialize the manager, these three values must be passed into `CKAPIManager.initManager(String container, String apiToken, String environment) async`. This call should preferably be done in conjunction with the reflection setup initialization, as described below.
 
 ### Model Classes - Annotation
 

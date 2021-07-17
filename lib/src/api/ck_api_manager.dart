@@ -30,7 +30,7 @@ class CKAPIManager
   }
 
   /// Initialize the shared API manager for the application. Optionally, a custom [CKAPIManager] can be passed in.
-  static void initManager(String ckContainer, String ckAPIToken, CKEnvironment environment, {CKAPIManager? manager})
+  static Future<void> initManager(String ckContainer, String ckAPIToken, CKEnvironment environment, {CKAPIManager? manager}) async
   {
     var managerToInit = manager ?? CKAPIManager.shared();
 
@@ -39,7 +39,7 @@ class CKAPIManager
     managerToInit._environment = environment;
     managerToInit._redirectURLPattern = CKConstants.REDIRECT_URL_PATTERN_PREFIX + ckContainer.toLowerCase();
 
-    managerToInit.fetchWebAuthToken();
+    await managerToInit.fetchWebAuthToken();
   }
 
   /// Call the CloudKit API directly, given the database, api operation path, protocol (GET or POST), and optionally, the JSON body and [BuildContext].

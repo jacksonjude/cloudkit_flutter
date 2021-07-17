@@ -11,13 +11,13 @@ import 'model/user_schedule.dart';
 import 'example.reflectable.dart'; // Import generated code.
 // Run `flutter pub run build_runner build example` from the root directory to generate example.reflectable.dart code
 
-void main()
+void main() async
 {
-  initializeCloudKit();
+  await initializeCloudKit();
   runApp(CKTestApp());
 }
 
-void initializeCloudKit()
+Future<void> initializeCloudKit() async
 {
   const String ckContainer = ""; // YOUR CloudKit CONTAINER NAME HERE
   const String ckAPIToken = ""; // YOUR CloudKit API TOKEN HERE
@@ -31,7 +31,7 @@ void initializeCloudKit()
     UserSchedule
   ]);
 
-  CKAPIManager.initManager(ckContainer, ckAPIToken, ckEnvironment);
+  await CKAPIManager.initManager(ckContainer, ckAPIToken, ckEnvironment);
 }
 
 class CKTestApp extends StatelessWidget
