@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -64,13 +63,12 @@ class CKAPIManager
           response = await http.get(modifiedURIWithParameters);
           break;
         case CKOperationProtocol.post:
-          print(operationBody);
           response = await http.post(modifiedURIWithParameters, body: json.encode(operationBody ?? {}));
           break;
       }
 
-      log(operationBody.toString());
-      log(response.statusCode.toString());
+      print(operationBody.toString());
+      print(response.statusCode.toString());
 
       switch (response.statusCode)
       {
