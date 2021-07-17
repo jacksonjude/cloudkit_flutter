@@ -137,6 +137,7 @@ class CKAPIManager
   {
     if (_ckWebAuthToken == null && ckWebAuthToken == null) return;
 
+    WidgetsFlutterBinding.ensureInitialized();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(CKConstants.WEB_AUTH_TOKEN_STORAGE_KEY, ckWebAuthToken ?? _ckWebAuthToken!);
   }
@@ -144,6 +145,7 @@ class CKAPIManager
   /// Fetch the ckWebAuthToken from [SharedPreferences] into local storage.
   Future<String?> fetchWebAuthToken() async
   {
+    WidgetsFlutterBinding.ensureInitialized();
     final prefs = await SharedPreferences.getInstance();
     _ckWebAuthToken = prefs.getString(CKConstants.WEB_AUTH_TOKEN_STORAGE_KEY) ?? _ckWebAuthToken;
     return _ckWebAuthToken;
