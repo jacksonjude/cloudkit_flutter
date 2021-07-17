@@ -123,7 +123,7 @@ Finally, you must indicate to the `CKRecordParser` class which model classes sho
 
 ## Usage
 
-The main way to access the CloudKit API is through `CKOperation`, which is run though the `execute()` function. There are multiple kinds of operations, which are described below. \**More operations will be added in later versions*
+The main way to access the CloudKit API is through `CKOperation`, which is run though the `execute()` function. There are multiple kinds of operations, which are described below. 
 
 ### Operations
 
@@ -144,6 +144,8 @@ This operation is the main method to retrieve records from CloudKit.
 When creating the operation, you must pass in a local type for the operation to receive. For example: `CKRecordQueryOperation<Schedule>(CKDatabase.PUBLIC_DATABASE)` would fetch all `Schedule` records from the public database. Optionally, you can pass in a specific `CKZone` (`zoneID`), a `List<CKFilter>` (`filters`), or a `List<CKSortDescriptor` (`sortDescriptors`) to organize the results. You can also pass in a bool (`preloadAssets`) to indicate whether any `CKAsset` fields in fetched records should be preloaded.
 
 Returned from the `execute()` call is an array of local objects with the type provided to the operation.
+
+\**More operations will be added in later versions*
 
 ### Request Models
 
