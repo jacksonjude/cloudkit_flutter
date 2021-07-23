@@ -15,9 +15,9 @@ Within your app, there are two stages involved in setting up this library. First
 Before calls to the CloudKit API can be made, three values must be provided to the `CKAPIManager`:
 - CloudKit Container: The container ID used by CloudKit, which is typically `iCloud.` + your bundle ID.
 - CloudKit API Token: A token which must be created via the CloudKit dashboard. **Importantly, you must select the last option ('cloudkit-' + container id + '://') within 'URL Redirect' for the 'Sign in Callback'. The custom URL can be any short string, such as 'redirect'.**
-- CloudKit Environment: Changes whether the production or development environment is used. Corresponding strings are provided in the `CKEnvironment` class.
+- CloudKit Environment: Changes whether the production or development environment is used. Corresponding values are provided as constants in the `CKEnvironment` class.
 
-To initialize the manager, these three values must be passed into `CKAPIManager.initManager(String container, String apiToken, String environment) async`. This call should preferably be done in conjunction with the reflection setup initialization, as described below.
+To initialize the manager, these three values must be passed into `CKAPIManager.initManager(String container, String apiToken, CKEnvironment environment) async`. This call should preferably be done in conjunction with the reflection setup, as described below.
 
 ### Model Classes - Annotation
 
@@ -119,7 +119,7 @@ class Gender extends CKCustomFieldType<int>
 
 **Whenever you make changes to your model classes or `CKCustomFieldType` subclasses**, you must regenerate object code to allow for reflection to be used within the library. **First, ensure that the `build_runner` package is installed in your app's pubspec, as it is required to run the following command.** Next, generate the object code by running `flutter pub run build_runner build lib` from the root folder of your Flutter project. 
 
-After the code has been generated, call `initializeReflectable()` (found within generated `*.reflectable.dart` files) at the start of your app before any other library calls are made. Finally, you must indicate to the `CKRecordParser` class which model classes should be scanned. Before doing this, ensure that `initializeReflectable()` has been called. Then, scan the model classes via the `CKRecordParser.createRecordStructures(List<Type>)` function, listing the names of the local model classes. To scan the Schedule class for example, we would call `CKRecordParser.createRecordStructures([Schedule])`. This call should preferably be done in conjunction with the API Initialization, as described above.
+After the code has been generated, call `initializeReflectable()` (found within generated `*.reflectable.dart` files) at the start of your app before any other library calls are made. Finally, you must indicate to the `CKRecordParser` class which model classes should be scanned. To do this, call the `CKRecordParser.createRecordStructures(List<Type>)` function, listing the direct names of the local model classes within the list. To scan the Schedule class for example, we would call `CKRecordParser.createRecordStructures([Schedule])`. This call should preferably be done in conjunction with the API Initialization, as described above.
 
 ## Usage
 
