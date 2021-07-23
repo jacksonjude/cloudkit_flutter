@@ -102,10 +102,10 @@ class CKRecordParser
 
       // brute force required here since List<dynamic> => List<new_type> will fail, but dynamic => new_type works
       case CKFieldType.LIST_STRING_TYPE:
-        convertedValue = _castList<String>(rawValue);
+        convertedValue = rawValue.cast<String>();
         break;
       case CKFieldType.LIST_INT_TYPE:
-        convertedValue = _castList<int>(rawValue);
+        convertedValue = rawValue.cast<int>();
         break;
 
       case CKFieldType.DATETIME_TYPE:
@@ -146,15 +146,6 @@ class CKRecordParser
     return convertedValue;
   }
 
-  static List<T> _castList<T>(List<dynamic> list)
-  {
-    List<T> convertedList = [];
-    list.forEach((element) {
-      convertedList.add(element);
-    });
-    return convertedList;
-  }
-
   static Future<void> preloadAssets<T extends Object>(T localObject) async
   {
     var instanceMirror = reflector.reflect(localObject);
@@ -163,8 +154,10 @@ class CKRecordParser
     await Future.forEach(recordStructure.fields, (field) async {
       if ((field as CKFieldStructure).type == CKFieldType.ASSET_TYPE)
       {
-        var assetObject = instanceMirror.invokeGetter(field.localName) as CKAsset;
-        await assetObject.fetchAsset();
+        var assetObject = instanceMirror.invokeGetter(field.localName);
+        if (assetObject == null) return;
+
+        await (assetObject as CKAsset).fetchAsset();
       }
     });
   }

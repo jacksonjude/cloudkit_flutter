@@ -11,6 +11,8 @@ class CKReference
   final CKDatabase _database;
   final CKZone _zoneID;
 
+  dynamic _cachedObject;
+
   CKReference(this.referenceUUID, this._database, {CKZone? zoneID}) : _zoneID = zoneID ?? CKZone();
 
   /// Fetch the referenced object from CloudKit
@@ -20,8 +22,15 @@ class CKReference
     var queryOperation = CKRecordQueryOperation<T>(_database, zoneID: _zoneID, filters: [referenceUUIDFilter]);
     var operationCallback = await queryOperation.execute();
 
-    if (operationCallback.state == CKOperationState.success && operationCallback.response.length > 0) return operationCallback.response[0];
+    if (operationCallback.state == CKOperationState.success && operationCallback.response.length > 0)
+    {
+      _cachedObject = operationCallback.response[0];
+      return _cachedObject;
+    }
   }
+
+  /// Get the cached object
+  T? getObject<T>() => _cachedObject as T?;
 
   /// Convert the reference to JSON.
   Map<String,dynamic> toJSON() => {

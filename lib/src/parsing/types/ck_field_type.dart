@@ -79,4 +79,10 @@ abstract class CKCustomFieldType<T>
 
   /// Get the [CKFieldType] of this custom field type.
   CKFieldType getFieldType(Type thisType) => CKFieldType(thisType.toString(), CKFieldType.fromLocalType(T).record, type: thisType);
+
+  @override
+  bool operator ==(other) => other is CKCustomFieldType && this.rawValue == other.rawValue;
+
+  @override
+  int get hashCode => rawValue.hashCode;
 }
