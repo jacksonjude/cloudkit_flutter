@@ -1,3 +1,10 @@
+## 0.1.3
+
+- Added `CKReference.getObject<T>()` to fetch the object cached by `fetchFromCloud`
+- Added equals operator overload for `CKCustomFieldType` based on `rawValue`
+- Fixed a null error during `preloadAssets`
+- Updated README
+
 ## 0.1.2
 
 - Made `CKAPIManager.initManager` function async to account for `fetchWebAuthToken` being async
