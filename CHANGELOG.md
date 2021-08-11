@@ -1,3 +1,8 @@
+## 0.1.4
+
+- Created full flutter sub-project for example code
+- Updated README
+
 ## 0.1.3
 
 - Added `CKReference.getObject<T>()` to fetch the object cached by `fetchFromCloud`
