@@ -8,7 +8,7 @@ import 'model/schedule.dart';
 import 'model/week_schedule.dart';
 import 'model/user_schedule.dart';
 
-import 'example.reflectable.dart'; // Import generated code.
+import 'main.reflectable.dart'; // Import generated code.
 // Run `flutter pub run build_runner build example` from the root directory to generate example.reflectable.dart code
 
 void main() async
@@ -17,11 +17,20 @@ void main() async
   runApp(CKTestApp());
 }
 
+// To run this example code, you must have a CloudKit container with the following structure (as can be inferred from model/user_schedule.dart):
+// UserSchedule: {
+//   periodNames: List<String>
+//   profileImage: CKAsset
+//   genderRaw: int
+// }
+//
+// Once the container is created, enter the CloudKit container and API token (set up via the CloudKit dashboard & with the options specified in README.md) below:
+
 Future<void> initializeCloudKit() async
 {
   const String ckContainer = ""; // YOUR CloudKit CONTAINER NAME HERE
   const String ckAPIToken = ""; // YOUR CloudKit API TOKEN HERE
-  const CKEnvironment ckEnvironment = CKEnvironment.PRODUCTION_ENVIRONMENT;
+  const CKEnvironment ckEnvironment = CKEnvironment.DEVELOPMENT_ENVIRONMENT;
 
   initializeReflectable();
 
@@ -210,7 +219,7 @@ class FetchUserScheduleTestButtonState extends State<FetchUserScheduleTestButton
             return;
           }
 
-          var queryPeopleOperation = CKRecordQueryOperation<UserSchedule>(CKDatabase.PRIVATE_DATABASE, zoneID: CKZone("CloudCore"), preloadAssets: true, context: context);
+          var queryPeopleOperation = CKRecordQueryOperation<UserSchedule>(CKDatabase.PRIVATE_DATABASE, preloadAssets: true, context: context);
           CKOperationCallback queryCallback = await queryPeopleOperation.execute();
 
           List<UserSchedule> userSchedules = [];

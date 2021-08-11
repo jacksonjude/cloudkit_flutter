@@ -6,4 +6,4 @@ targets:
       reflectable:
         generate_for:
           - test/cloudkit_flutter_test.dart
-          - example/example.dart
+          - example/lib/main.dart
