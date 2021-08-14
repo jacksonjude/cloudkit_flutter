@@ -1,4 +1,5 @@
 import 'package:reflectable/reflectable.dart';
+import 'package:collection/collection.dart';
 
 import '../ck_constants.dart';
 import 'types/ck_reference.dart';
@@ -6,11 +7,13 @@ import 'types/ck_asset.dart';
 import 'reflector.dart';
 import 'annotations/ck_record_type_annotation.dart';
 import 'annotations/ck_record_name_annotation.dart';
+import 'annotations/ck_reference_field_annotation.dart';
 import 'annotations/ck_field_annotation.dart';
 import 'ck_record_structure.dart';
 import 'ck_field_structure.dart';
 import 'types/ck_field_type.dart';
 import '../api/request_models/ck_zone.dart';
+import '../api/ck_local_database_manager.dart';
 
 /// The class that handles local model class annotation parsing.
 class CKRecordParser
@@ -18,7 +21,7 @@ class CKRecordParser
   static Map<Type,CKRecordStructure> _recordStructures = {};
 
   /// Create [CKRecordStructure] objects from the provided annotated model classes.
-  static void createRecordStructures(List<Type> classTypes)
+  static void createRecordStructures(List<Type> classTypes, {CKLocalDatabaseManager? databaseManager})
   {
     Map<Type,CKRecordStructure> recordStructures = {};
 
@@ -37,14 +40,20 @@ class CKRecordParser
 
       currentClassMirror.declarations.values.forEach((field) // iterate through member functions, variables, etc
       {
-        if (field is VariableMirror && _isTypeInArray<CKFieldAnnotation>(field.metadata)) // if the field is a variable and tagged with a CKFieldAnnotation ...
+        if (field is VariableMirror && _isTypeInArray<CKRecordNameAnnotation>(field.metadata)) // if the field is a variable and tagged with a CKRecordNameAnnotation ...
+        {
+          var recordNameFieldAnnotation = _getTypeFromArray<CKRecordNameAnnotation>(field.metadata); // get the annotation object
+          recordStructure.fields.add(CKFieldStructure(field.simpleName, CKConstants.RECORD_NAME_FIELD, CKFieldType.fromLocalType(field.reflectedType), recordNameFieldAnnotation)); // create a CKFieldData object for the record name field
+        }
+        else if (field is VariableMirror && _isTypeInArray<CKReferenceFieldAnnotation>(field.metadata)) // if the field is a variable and tagged with a CKReferenceFieldAnnotation ...
+        {
+          var referenceFieldAnnotation = _getTypeFromArray<CKReferenceFieldAnnotation>(field.metadata); // get the annotation object
+          recordStructure.fields.add(CKFieldStructure(field.simpleName, referenceFieldAnnotation.name, CKFieldType.fromLocalType(field.reflectedType), referenceFieldAnnotation)); // create a CKFieldData object for the reference field
+        }
+        else if (field is VariableMirror && _isTypeInArray<CKFieldAnnotation>(field.metadata)) // if the field is a variable and tagged with a CKFieldAnnotation ...
         {
           var fieldAnnotation = _getTypeFromArray<CKFieldAnnotation>(field.metadata); // get the annotation object
-          recordStructure.fields.add(CKFieldStructure(field.simpleName, fieldAnnotation.name, CKFieldType.fromLocalType(field.reflectedType))); // create a CKFieldData object for the current field
-        }
-        else if (field is VariableMirror && _isTypeInArray<CKRecordNameAnnotation>(field.metadata)) // if the field is a variable and tagged with a CKRecordNameAnnotation ...
-        {
-          recordStructure.fields.add(CKFieldStructure(field.simpleName, CKConstants.RECORD_NAME_FIELD, CKFieldType.fromLocalType(field.reflectedType))); // create a CKFieldData object for the recordName field
+          recordStructure.fields.add(CKFieldStructure(field.simpleName, fieldAnnotation.name, CKFieldType.fromLocalType(field.reflectedType), fieldAnnotation)); // create a CKFieldData object for the current field
         }
       });
 
@@ -52,6 +61,8 @@ class CKRecordParser
     });
 
     CKRecordParser._recordStructures = recordStructures;
+
+    CKLocalDatabaseManager.initializeDatabase(_recordStructures, manager: databaseManager);
   }
 
   static bool _isTypeInArray<T>(List<Object> array)
@@ -68,7 +79,13 @@ class CKRecordParser
   static T recordToLocalObject<T extends Object>(Map<String,dynamic> recordData, {CKDatabase? database})
   {
     recordData = _recordToSimpleJSON(recordData);
+    var newLocalObject = simpleJSONToLocalObject<T>(recordData, database: database);
 
+    return newLocalObject;
+  }
+
+  static T simpleJSONToLocalObject<T extends Object>(Map<String,dynamic> recordData, {CKDatabase? database})
+  {
     var recordStructure = getRecordStructureFromLocalType(T);
 
     var newLocalObject = recordStructure.localClassMirror.newInstance("", []);
@@ -78,7 +95,7 @@ class CKRecordParser
       var rawValue = recordData[field.ckName];
       if (rawValue == null) return;
 
-      var convertedValue = convertToLocalValue(field.type, rawValue, database: database);
+      var convertedValue = convertToLocalValue(field.type, field, rawValue, database: database);
 
       instanceMirror.invokeSetter(field.localName, convertedValue);
     });
@@ -87,11 +104,11 @@ class CKRecordParser
   }
 
   /// Convert a single CloudKit record field to a local value.
-  static dynamic convertToLocalValue(CKFieldType field, dynamic rawValue, {CKDatabase? database})
+  static dynamic convertToLocalValue(CKFieldType fieldType, CKFieldStructure fieldStructure, dynamic rawValue, {CKDatabase? database})
   {
     var convertedValue = rawValue;
 
-    switch (field)
+    switch (fieldType)
     {
       case CKFieldType.STRING_TYPE:
       case CKFieldType.INT_TYPE:
@@ -113,12 +130,24 @@ class CKRecordParser
         break;
 
       case CKFieldType.REFERENCE_TYPE:
-        convertedValue = CKReference(rawValue[CKConstants.RECORD_NAME_FIELD], database!, zoneID: CKZone(rawValue["zoneID"]["zoneName"]));
+        var referenceAnnotation = fieldStructure.annotation as CKReferenceFieldAnnotation;
+        convertedValue = referenceAnnotation.createReference(
+          rawValue[CKConstants.RECORD_NAME_FIELD],
+          database: CKDatabase.databases.firstWhereOrNull((database) => database.toString() == rawValue["database"]) ?? database,
+          zone: CKZone(rawValue["zoneID"]["zoneName"])
+        );
         break;
       case CKFieldType.LIST_REFERENCE_TYPE:
+        var referenceAnnotation = fieldStructure.annotation as CKReferenceFieldAnnotation;
         List<CKReference> convertedList = [];
         rawValue.forEach((reference) {
-          convertedList.add(CKReference(reference[CKConstants.RECORD_NAME_FIELD], database!, zoneID: CKZone(reference["zoneID"]["zoneName"])));
+          convertedList.add(
+            referenceAnnotation.createReference(
+              reference[CKConstants.RECORD_NAME_FIELD],
+              database: CKDatabase.databases.firstWhereOrNull((database) => database.toString() == reference["database"]) ?? database,
+              zone: CKZone(reference["zoneID"]["zoneName"])
+            )
+          );
         });
         convertedValue = convertedList;
         break;
@@ -129,18 +158,18 @@ class CKRecordParser
         break;
 
       default:
-        if (field.type != null)
+        if (fieldType.type != null)
         {
-          ClassMirror currentClassMirrorForType = reflector.reflectType(field.type!) as ClassMirror;
+          ClassMirror currentClassMirrorForType = reflector.reflectType(fieldType.type!) as ClassMirror;
           var newTestInstance = currentClassMirrorForType.newInstance("", []);
           if (newTestInstance is CKCustomFieldType)
           {
-            var baseConvertedValue = convertToLocalValue(CKFieldType.fromRecordType(field.record), rawValue, database: database);
+            var baseConvertedValue = convertToLocalValue(CKFieldType.fromRecordType(fieldType.record), fieldStructure, rawValue, database: database);
             convertedValue = currentClassMirrorForType.newInstance("fromRecordField", [baseConvertedValue]);
             break;
           }
         }
-        throw UnimplementedError("Type (" + field.toString() + ") cannot be converted from JSON to a local type");
+        throw UnimplementedError("Type (" + fieldType.toString() + ") cannot be converted from JSON to a local type");
     }
 
     return convertedValue;
@@ -165,6 +194,15 @@ class CKRecordParser
   /// Convert a local model object to a CloudKit record JSON object.
   static Map<String,dynamic> localObjectToRecord<T extends Object>(T localObject)
   {
+    var newRecordObject = localObjectToSimpleJSON<T>(localObject);
+    var recordStructure = getRecordStructureFromLocalType(T);
+
+    return _simpleJSONToRecord(recordStructure.ckRecordType, newRecordObject);
+  }
+
+  /// Convert a local model object to a simple JSON object.
+  static Map<String,dynamic> localObjectToSimpleJSON<T extends Object>(T localObject)
+  {
     var recordStructure = getRecordStructureFromLocalType(T);
 
     var newRecordObject = Map<String,dynamic>();
@@ -180,7 +218,7 @@ class CKRecordParser
       newRecordObject[field.ckName] = convertedValue;
     });
 
-    return _simpleJSONToRecord(recordStructure.ckRecordType, newRecordObject);
+    return newRecordObject;
   }
 
   /// Convert a single local value to a CloudKit record field.
@@ -215,13 +253,10 @@ class CKRecordParser
         break;
 
       default:
-        if (field.type != null)
+        if (field.type != null && rawValue is CKCustomFieldType)
         {
-          if (rawValue is CKCustomFieldType)
-          {
-            convertedValue = rawValue.toRecordField();
-            break;
-          }
+          convertedValue = rawValue.toRecordField();
+          break;
         }
         throw UnimplementedError("Type (" + field.toString() + ") cannot be converted from JSON to a local type");
     }

@@ -5,18 +5,18 @@ import '../../ck_constants.dart';
 import 'ck_field_type.dart';
 
 /// A representation of a CloudKit reference.
-class CKReference
+class CKReference<T extends Object>
 {
   final String referenceUUID;
   final CKDatabase _database;
   final CKZone _zoneID;
 
-  dynamic _cachedObject;
+  T? _cachedObject;
 
   CKReference(this.referenceUUID, this._database, {CKZone? zoneID}) : _zoneID = zoneID ?? CKZone();
 
   /// Fetch the referenced object from CloudKit
-  Future<T?> fetchFromCloud<T extends Object>() async
+  Future<T?> fetchFromCloud() async
   {
     var referenceUUIDFilter = CKFilter(CKConstants.RECORD_NAME_FIELD, CKFieldType.STRING_TYPE, referenceUUID, CKComparator.EQUALS);
     var queryOperation = CKRecordQueryOperation<T>(_database, zoneID: _zoneID, filters: [referenceUUIDFilter]);
@@ -30,11 +30,12 @@ class CKReference
   }
 
   /// Get the cached object
-  T? getObject<T>() => _cachedObject as T?;
+  T? getObject() => _cachedObject;
 
   /// Convert the reference to JSON.
   Map<String,dynamic> toJSON() => {
     CKConstants.RECORD_NAME_FIELD: referenceUUID,
+    "database": _database.toString(),
     "zoneID": _zoneID.toJSON()
   };
 }

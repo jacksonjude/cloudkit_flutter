@@ -58,6 +58,8 @@ class CKDatabase
   static const SHARED_DATABASE = CKDatabase("shared");
   static const PRIVATE_DATABASE = CKDatabase("private");
 
+  static const databases = [PUBLIC_DATABASE, SHARED_DATABASE, PRIVATE_DATABASE];
+
   final String _database;
 
   const CKDatabase(this._database);

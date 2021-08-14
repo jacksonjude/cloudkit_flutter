@@ -32,6 +32,9 @@ class CKFieldType
   static CKFieldType fromLocalType(Type T)
   {
     return ALL_TYPES.firstWhere((fieldType) => fieldType.local == T.toString(), orElse: () {
+      if (RegExp(r"^CKReference<(\w+)>$").hasMatch(T.toString())) return CKFieldType.REFERENCE_TYPE;
+      else if (RegExp(r"^List<CKReference<(\w+)>>$").hasMatch(T.toString())) return CKFieldType.LIST_REFERENCE_TYPE;
+
       try
       {
         ClassMirror currentClassMirrorForType = reflector.reflectType(T) as ClassMirror; //TODO: Messy solution :(
