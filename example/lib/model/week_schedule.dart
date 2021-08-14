@@ -1,3 +1,4 @@
+import 'package:cloudkit_example/model/schedule.dart';
 import 'package:cloudkit_flutter/cloudkit_flutter_model.dart';
 
 @reflector
@@ -10,11 +11,12 @@ class WeekSchedule
   @CKFieldAnnotation("weekStartDate")
   DateTime? startTime;
 
-  @CKFieldAnnotation("schedules")
-  List<String>? schedules;
+  @CKReferenceFieldAnnotation("schedules", CKReferenceGenerator<Schedule>(CKDatabase.PUBLIC_DATABASE))
+  CKReference<Schedule>? schedules;
 
   @override
-  String toString() {
+  String toString()
+  {
     String stringOutput = "";
 
     stringOutput += "WeekSchedule: {";

@@ -17,7 +17,8 @@ class UserSchedule
   Gender? gender;
 
   @override
-  String toString() {
+  String toString()
+  {
     String stringOutput = "";
 
     stringOutput += "UserSchedule: {";
@@ -41,15 +42,15 @@ class Gender extends CKCustomFieldType<int>
   String name;
 
   Gender() :
-        name = unknown.name,
-        super.fromRecordField(unknown.rawValue);
+    name = unknown.name,
+    super.fromRecordField(unknown.rawValue);
   Gender.fromRecordField(int raw) :
-        name = genders[raw].name,
-        super.fromRecordField(raw);
+    name = genders[raw].name,
+    super.fromRecordField(raw);
 
   Gender.withName(int raw, String name) :
-        name = name,
-        super.fromRecordField(raw);
+    name = name,
+    super.fromRecordField(raw);
 
   @override
   String toString() => name;

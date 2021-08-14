@@ -17,7 +17,8 @@ class Schedule
   List<int>? periodNumbers;
 
   @override
-  String toString() {
+  String toString()
+  {
     String stringOutput = "";
 
     stringOutput += "Schedule: {";
