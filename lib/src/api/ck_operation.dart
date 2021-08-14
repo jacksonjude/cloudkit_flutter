@@ -1,11 +1,13 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 import 'ck_api_manager.dart';
 import 'request_models/ck_record_query_request.dart';
+import 'request_models/ck_record_zone_changes_request.dart';
 import 'request_models/ck_zone.dart';
 import 'request_models/ck_query.dart';
 import 'request_models/ck_filter.dart';
 import 'request_models/ck_sort_descriptor.dart';
+import 'request_models/ck_sync_token.dart';
 import '../parsing/ck_record_parser.dart';
 import '../ck_constants.dart';
 
@@ -26,6 +28,16 @@ class CKOperationCallback
   CKOperationCallback(this.state, {this.response});
 }
 
+/// Contains a [CKSyncToken], a [CKOperationState], and the changed records from a fetch changes operation.
+class CKChangesOperationCallback<T> extends CKOperationCallback
+{
+  final List<T> changedRecords;
+  final CKSyncToken? syncToken;
+
+  CKChangesOperationCallback(CKOperationState state, this.changedRecords, this.syncToken) : super(state, response: changedRecords);
+  CKChangesOperationCallback.withOperationCallback(CKOperationCallback operationCallback, this.syncToken) : changedRecords = operationCallback.response ?? [], super(operationCallback.state, response: operationCallback.response);
+}
+
 /// Denotes the protocol type of an operation.
 enum CKOperationProtocol
 {
@@ -33,7 +45,7 @@ enum CKOperationProtocol
   post
 }
 
-/// The base class for an operation
+/// The base class for an operation.
 abstract class CKOperation
 {
   final CKAPIManager _apiManager;
@@ -48,15 +60,17 @@ abstract class CKOperation
   Future<CKOperationCallback> execute();
 }
 
+/// The base class for a GET operation.
 abstract class CKGetOperation extends CKOperation
 {
   CKGetOperation(CKDatabase database, {CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context);
 
-  /// Execute the GET operation
+  /// Execute the GET operation.
   @override
   Future<CKOperationCallback> execute() async => await this._apiManager.callAPI(_database, _getAPIPath(), CKOperationProtocol.get, context: _context);
 }
 
+/// The base class for a POST operation.
 abstract class CKPostOperation extends CKOperation
 {
   CKPostOperation(CKDatabase database, {CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context);
@@ -68,6 +82,7 @@ abstract class CKPostOperation extends CKOperation
   Future<CKOperationCallback> execute() async => await this._apiManager.callAPI(_database, _getAPIPath(), CKOperationProtocol.post, operationBody: _getBody(), context: _context);
 }
 
+/// An operation to fetch the current user ID.
 class CKCurrentUserOperation extends CKGetOperation
 {
   CKCurrentUserOperation(CKDatabase database, {CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context);
@@ -87,6 +102,7 @@ class CKCurrentUserOperation extends CKGetOperation
   }
 }
 
+/// An operation to fetch records.
 class CKRecordQueryOperation<T extends Object> extends CKPostOperation
 {
   late final CKRecordQueryRequest _recordQueryRequest;
@@ -105,6 +121,8 @@ class CKRecordQueryOperation<T extends Object> extends CKPostOperation
   @override
   Map<String,dynamic>? _getBody() => _recordQueryRequest.toJSON();
 
+  List<dynamic> _handleResponse(dynamic response) => response["records"];
+
   /// Execute the record query operation.
   @override
   Future<CKOperationCallback> execute() async
@@ -114,7 +132,9 @@ class CKRecordQueryOperation<T extends Object> extends CKPostOperation
     List<T> newLocalObjects = [];
     if (apiCallback.state == CKOperationState.success)
     {
-      await Future.forEach(apiCallback.response["records"], (recordMap) async {
+      var recordsList = _handleResponse(apiCallback.response);
+
+      await Future.forEach(recordsList, (recordMap) async {
         var newObject = CKRecordParser.recordToLocalObject<T>(recordMap as Map<String,dynamic>, database: _database);
 
         if (_shouldPreloadAssets) await CKRecordParser.preloadAssets<T>(newObject);
@@ -124,5 +144,46 @@ class CKRecordQueryOperation<T extends Object> extends CKPostOperation
     }
 
     return CKOperationCallback(apiCallback.state, response: newLocalObjects);
+  }
+}
+
+/// An operation to fetch record zone changes.
+class CKRecordZoneChangesOperation<T extends Object> extends CKRecordQueryOperation
+{
+  final CKRecordZoneChangesRequest _recordZoneChangesRequest;
+  CKSyncToken? _currentSyncToken;
+
+  CKRecordZoneChangesOperation(CKZone zoneID, CKDatabase database, {CKRecordZoneChangesRequest? zoneChangesRequest, CKSyncToken? syncToken, int? resultsLimit, List<String>? recordFields, bool? preloadAssets, CKAPIManager? apiManager, BuildContext? context}) :
+    this._recordZoneChangesRequest = zoneChangesRequest ?? CKRecordZoneChangesRequest<T>(zoneID, syncToken, resultsLimit, recordFields),
+    this._currentSyncToken = syncToken,
+    super(database, zoneID: zoneID, resultsLimit: resultsLimit, preloadAssets: preloadAssets, apiManager: apiManager, context: context);
+
+  @override
+  String _getAPIPath() => "changes/zone";
+
+  @override
+  Map<String,dynamic>? _getBody() => {
+    "zones": [
+      _recordZoneChangesRequest.toJSON()
+    ]
+  };
+
+  @override
+  List<dynamic> _handleResponse(dynamic response)
+  {
+    if (response["zones"].length <= 0) return [];
+
+    var zoneChangesResponse = response["zones"][0];
+    _currentSyncToken = zoneChangesResponse["syncToken"];
+    return zoneChangesResponse["records"];
+  }
+
+  /// Execute the record zone changes.
+  @override
+  Future<CKChangesOperationCallback<T>> execute() async
+  {
+    CKOperationCallback recordChangesCallback = await super.execute();
+
+    return CKChangesOperationCallback<T>.withOperationCallback(recordChangesCallback, _currentSyncToken);
   }
 }
