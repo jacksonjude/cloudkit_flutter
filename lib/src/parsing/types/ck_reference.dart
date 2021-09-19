@@ -5,7 +5,7 @@ import '../../ck_constants.dart';
 import 'ck_field_type.dart';
 
 /// A representation of a CloudKit reference.
-class CKReference<T extends Object>
+class CKReference<T>
 {
   final String referenceUUID;
   final CKDatabase _database;

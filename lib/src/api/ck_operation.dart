@@ -103,7 +103,7 @@ class CKCurrentUserOperation extends CKGetOperation
 }
 
 /// An operation to fetch records.
-class CKRecordQueryOperation<T extends Object> extends CKPostOperation
+class CKRecordQueryOperation<T> extends CKPostOperation
 {
   late final CKRecordQueryRequest _recordQueryRequest;
   late final bool _shouldPreloadAssets;

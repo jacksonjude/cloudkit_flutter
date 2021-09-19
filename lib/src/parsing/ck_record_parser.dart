@@ -76,7 +76,7 @@ class CKRecordParser
   }
 
   /// Convert a CloudKit record JSON object to a local model object.
-  static T recordToLocalObject<T extends Object>(Map<String,dynamic> recordData, {CKDatabase? database})
+  static T recordToLocalObject<T>(Map<String,dynamic> recordData, {CKDatabase? database})
   {
     recordData = _recordToSimpleJSON(recordData);
     var newLocalObject = simpleJSONToLocalObject<T>(recordData, database: database);
@@ -84,7 +84,7 @@ class CKRecordParser
     return newLocalObject;
   }
 
-  static T simpleJSONToLocalObject<T extends Object>(Map<String,dynamic> recordData, {CKDatabase? database})
+  static T simpleJSONToLocalObject<T>(Map<String,dynamic> recordData, {CKDatabase? database})
   {
     var recordStructure = getRecordStructureFromLocalType(T);
 
@@ -175,9 +175,9 @@ class CKRecordParser
     return convertedValue;
   }
 
-  static Future<void> preloadAssets<T extends Object>(T localObject) async
+  static Future<void> preloadAssets<T>(T localObject) async
   {
-    var instanceMirror = reflector.reflect(localObject);
+    var instanceMirror = reflector.reflect(localObject!);
     var recordStructure = getRecordStructureFromLocalType(T);
 
     await Future.forEach(recordStructure.fields, (field) async {

@@ -14,7 +14,7 @@ class CKReferenceFieldAnnotation extends CKFieldAnnotation
     _generator.createReference(referenceUUID, database: database, zone: zone);
 }
 
-class CKReferenceGenerator<T extends Object>
+class CKReferenceGenerator<T>
 {
   /// The database for the reference generator.
   final CKDatabase? _database;
