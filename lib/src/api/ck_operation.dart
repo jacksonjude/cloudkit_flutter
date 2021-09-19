@@ -187,3 +187,6 @@ class CKRecordZoneChangesOperation<T extends Object> extends CKRecordQueryOperat
     return CKChangesOperationCallback<T>.withOperationCallback(recordChangesCallback, _currentSyncToken);
   }
 }
+
+/// An operation to modify records
+// class CKRecordModifyOperation

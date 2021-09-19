@@ -19,8 +19,8 @@ class CKLocalDatabaseManager
   static const _readwriteTransaction = "readwrite";
   static const _readTransaction = "read";
 
-  late final _databaseName;
-  late final _databaseVersion;
+  final _databaseName;
+  final _databaseVersion;
   late final Database _databaseInstance;
 
   CKLocalDatabaseManager(this._databaseName, this._databaseVersion) : _databaseEventHistory = CKDatabaseEventList();

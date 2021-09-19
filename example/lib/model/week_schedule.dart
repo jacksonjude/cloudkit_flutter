@@ -12,7 +12,7 @@ class WeekSchedule
   DateTime? startTime;
 
   @CKReferenceFieldAnnotation("schedules", CKReferenceGenerator<Schedule>(CKDatabase.PUBLIC_DATABASE))
-  CKReference<Schedule>? schedules;
+  List<CKReference<Schedule>>? schedules;
 
   @override
   String toString()
