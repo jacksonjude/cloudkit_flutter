@@ -1,8 +1,14 @@
 # example
 
-A new Flutter project.
+A cloudkit_flutter example project.
 
-## Getting Started
+## Setup
+
+- Install `cloudkit_flutter` and `build_runner` by running `flutter pub get`
+- Enter `ckContainer` and `ckAPIToken` strings in `main.dart`
+- Run `flutter pub run build_runner build lib` in `/example` to generate object files 
+
+## Flutter Info
 
 This project is a starting point for a Flutter application.
 

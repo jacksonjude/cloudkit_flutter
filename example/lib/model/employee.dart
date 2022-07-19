@@ -1,29 +1,34 @@
 import 'package:cloudkit_flutter/cloudkit_flutter_model.dart';
 
 @reflector
-@CKRecordTypeAnnotation("UserSchedule")
-class UserSchedule
+@CKRecordTypeAnnotation("Employee")
+class Employee
 {
   @CKRecordNameAnnotation()
   String? uuid;
 
-  @CKFieldAnnotation("profileImage")
-  CKAsset? profileImage;
+  @CKFieldAnnotation("name")
+  String? name;
 
-  @CKFieldAnnotation("periodNames")
-  List<String>? periodNames;
+  @CKFieldAnnotation("nicknames")
+  List<String>? nicknames;
 
   @CKFieldAnnotation("genderRaw")
   Gender? gender;
+
+  @CKFieldAnnotation("profileImage")
+  CKAsset? profileImage;
 
   @override
   String toString()
   {
     String stringOutput = "";
 
-    stringOutput += "UserSchedule: {";
-    stringOutput += "\n  profileImage: " + (profileImage ?? "null").toString();
-    stringOutput += "\n  periodNames: " + (periodNames ?? "null").toString();
+    stringOutput += "Employee: {";
+    stringOutput += "\n  uuid: " + (uuid ?? "null");
+    stringOutput += "\n  name: " + (name ?? "null");
+    stringOutput += "\n  nicknames: " + (nicknames ?? "null").toString();
+    stringOutput += "\n  gender: " + (gender ?? "null").toString();
     stringOutput += "\n}";
 
     return stringOutput;

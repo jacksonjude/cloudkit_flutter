@@ -112,8 +112,15 @@ class CKRecordParser
     {
       case CKFieldType.STRING_TYPE:
       case CKFieldType.INT_TYPE:
-      case CKFieldType.DOUBLE_TYPE:
       // setter below will automatically work for these types; others might also automatically work (other types of lists?)
+        convertedValue = rawValue;
+        break;
+
+      case CKFieldType.DOUBLE_TYPE:
+        if (rawValue is int)
+        {
+          rawValue = rawValue.toDouble();
+        }
         convertedValue = rawValue;
         break;
 
