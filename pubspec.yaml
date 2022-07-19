@@ -12,11 +12,11 @@ dependencies:
   flutter:
     sdk: flutter
 
-  webview_flutter: ^2.0.8
-  http: ^0.13.3
-  reflectable: ^3.0.2
-  build_runner: ^2.0.4
-  shared_preferences: ^2.0.6
+  webview_flutter: ^3.0.4
+  http: ^0.13.4
+  reflectable: ^3.0.8
+  build_runner: ^2.1.11
+  shared_preferences: ^2.0.15
 
 dev_dependencies:
   flutter_test:
