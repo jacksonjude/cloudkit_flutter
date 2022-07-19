@@ -28,7 +28,9 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.5
 
-  cloudkit_flutter: ^0.1.4
+  cloudkit_flutter:
+    path: ../
+
   build_runner: ^2.1.11
 
 dev_dependencies:
