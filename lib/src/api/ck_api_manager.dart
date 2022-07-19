@@ -46,15 +46,15 @@ class CKAPIManager
   {
     if (this._ckAuthURL == null || this._ckWebAuthToken != null)
     {
-      var getCurrentUserURIQueryParameters = Map<String,String>();
-      getCurrentUserURIQueryParameters[CKConstants.API_TOKEN_PARAMETER] = this._ckAPIToken;
+      var uriQueryParameters = Map<String,String>();
+      uriQueryParameters[CKConstants.API_TOKEN_PARAMETER] = this._ckAPIToken;
       if (this._ckWebAuthToken != null)
       {
-        getCurrentUserURIQueryParameters[CKConstants.WEB_AUTH_TOKEN_PARAMETER] = this._ckWebAuthToken!;
+        uriQueryParameters[CKConstants.WEB_AUTH_TOKEN_PARAMETER] = this._ckWebAuthToken!;
       }
 
       var originalURI = Uri.parse(CKConstants.API_URL_BASE + "/" + this._ckContainer + "/" + this._environment.toString() + "/" + database.toString() + "/" + operationPath);
-      var modifiedURIWithParameters = Uri.https(originalURI.authority, originalURI.path, getCurrentUserURIQueryParameters);
+      var modifiedURIWithParameters = Uri.https(originalURI.authority, originalURI.path, uriQueryParameters);
 
       var response;
       switch (operationProtocol)
