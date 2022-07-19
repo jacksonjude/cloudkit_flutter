@@ -17,6 +17,8 @@ dependencies:
   reflectable: ^3.0.8
   build_runner: ^2.1.11
   shared_preferences: ^2.0.15
+  sqflite: ^2.0.3
+  idb_sqflite: ^1.1.1
 
 dev_dependencies:
   flutter_test:
