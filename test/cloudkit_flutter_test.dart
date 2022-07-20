@@ -6,6 +6,8 @@ import 'cloudkit_flutter_test.reflectable.dart'; // Import generated code
 
 import 'model/schedule.dart';
 import 'model/week_schedule.dart';
+import 'model/employee.dart';
+import 'model/department.dart';
 
 const scheduleStructureString =
 """CKRecordData: {
@@ -59,14 +61,22 @@ const weekScheduleObjectString =
   schedules: [H, H, H, H, H]
 }""";
 
-void main() {
+void main() async {
   initializeReflectable();
 
   CKRecordParser.createRecordStructures([
     Schedule,
-    WeekSchedule
-  ]);
+    WeekSchedule,
+    Employee,
+    Department
+  ], shouldInitializeDatabase: false);
 
+  testRecordParser();
+  await testPublicDatabase();
+}
+
+void testRecordParser()
+{
   test('record structure conversion', () {
     expect(CKRecordParser.getRecordStructureFromLocalType(Schedule).toString(), scheduleStructureString);
 
@@ -119,5 +129,36 @@ void main() {
       }
     }, CKDatabase.PUBLIC_DATABASE);
     expect(localWeekSchedule.toString(), weekScheduleObjectString);
+  });
+}
+
+Future<void> testPublicDatabase() async
+{
+  const String ckContainer = "iCloud.com.jacksonjude.CloudKitTest";
+  const String ckAPIToken = "0a4566adae1a9ae667cb694b82400eac08ef228f0bba384273248012a7dfc54c";
+  const CKEnvironment ckEnvironment = CKEnvironment.DEVELOPMENT_ENVIRONMENT;
+
+  await CKAPIManager.initManager(ckContainer, ckAPIToken, ckEnvironment, shouldFetchWebAuthToken: false);
+
+  test('recordName filter fetch', () async {
+    var recordNameFilter = CKFilter(CKConstants.RECORD_NAME_FIELD, CKFieldType.STRING_TYPE, "8D863AD6-F966-DB2B-B809-AC258B72BDCE", CKComparator.EQUALS);
+    var recordNameQueryOperation = CKRecordQueryOperation<Employee>(CKDatabase.PUBLIC_DATABASE, filters: [recordNameFilter], preloadAssets: true);
+    CKOperationCallback<List<Employee>> recordNameQueryCallback = await recordNameQueryOperation.execute();
+    expect(recordNameQueryCallback.state, CKOperationState.success);
+    if (recordNameQueryCallback.state == CKOperationState.success && recordNameQueryCallback.response!.length > 0)
+    {
+      var employee = recordNameQueryCallback.response![0];
+      expect(employee.name, "Bob");
+      var department = await employee.department?.fetchFromCloud();
+      expect(department?.name, "Athletics");
+    }
+  });
+
+  test('other field filter fetch', () async {
+    var nicknameFilter = CKFilter("nicknames", CKFieldType.LIST_STRING_TYPE, "Bobby", CKComparator.LIST_CONTAINS);
+    var nicknameQueryOperation = CKRecordQueryOperation<Employee>(CKDatabase.PUBLIC_DATABASE, filters: [nicknameFilter], preloadAssets: true);
+    CKOperationCallback<List<Employee>> nicknameQueryCallback = await nicknameQueryOperation.execute();
+    expect(nicknameQueryCallback.state, CKOperationState.success);
+    expect(nicknameQueryCallback.response?.length, 1);
   });
 }
