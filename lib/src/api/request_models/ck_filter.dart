@@ -3,37 +3,27 @@ import 'package:cloudkit_flutter/src/ck_constants.dart';
 import '../../parsing/types/ck_field_type.dart';
 
 /// A representation of a CloudKit filter.
-class CKFilter {
+class CKFilter
+{
   final CKComparator _comparator;
   final String _fieldName;
-  final Map<String, dynamic> _fieldValueDictionary;
+  final Map<String,dynamic> _fieldValueDictionary;
   final double? _distance;
 
-  dynamic _fieldValue;
-
-  CKFilter(this._fieldName, CKFieldType fieldType, dynamic fieldValue,
-      this._comparator,
-      {double? distance})
-      : _fieldValue = (fieldValue != null)
-            ? {'value': fieldValue, 'type': fieldType.record}
-            : ((fieldType is num) ? 0 : ""),
-        _fieldValueDictionary = {
-          'value': {_fieldName: fieldValue},
-          'type': fieldType.record
-        },
-        _distance = distance;
+  CKFilter(this._fieldName, CKFieldType fieldType, dynamic fieldValue, this._comparator, {double? distance}):
+    _fieldValueDictionary = {
+      'value': CKConstants.isSystemFieldName(_fieldName) ? {_fieldName: fieldValue} : fieldValue,
+      'type': fieldType.record
+    },
+    _distance = distance;
 
   /// Convert the filter to JSON.
   Map<String, dynamic> toJSON() => {
-        'comparator': _comparator._comparatorString,
-        (CKConstants.isSystemFieldName(_fieldName)
-            ? 'systemFieldName'
-            : 'fieldName'): _fieldName,
-        'fieldValue': (CKConstants.isSystemFieldName(_fieldName)
-            ? _fieldValueDictionary
-            : _fieldValue),
-        'distance': _distance
-      };
+    'comparator': _comparator._comparatorString,
+    (CKConstants.isSystemFieldName(_fieldName) ? 'systemFieldName' : 'fieldName'): _fieldName,
+    'fieldValue': _fieldValueDictionary,
+    'distance': _distance
+  };
 }
 
 /// A container class for the types of CloudKit comparators used in [CKFilter] objects
