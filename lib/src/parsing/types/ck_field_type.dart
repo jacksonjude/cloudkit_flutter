@@ -28,7 +28,7 @@ class CKFieldType
 
   const CKFieldType(this.local, this.record, {this.type});
 
-  /// Get the CKFieldType from a Type object.
+  /// Get the [CKFieldType] from a Type object.
   static CKFieldType fromLocalType(Type T)
   {
     return ALL_TYPES.firstWhere((fieldType) => fieldType.local == T.toString(), orElse: () {

@@ -70,8 +70,9 @@ class CKAPIManager
           break;
       }
 
-      print(operationBody.toString());
-      print(response.statusCode.toString());
+      print(originalURI);
+      print(json.encode(operationBody ?? {}));
+      print(response.statusCode);
 
       switch (response.statusCode)
       {
