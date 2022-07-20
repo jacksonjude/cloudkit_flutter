@@ -4,7 +4,7 @@ import 'ck_zone.dart';
 import 'ck_sync_token.dart';
 
 /// A container class for the zone ID, result limit, and sync token for a CloudKit record zone changes request.
-class CKRecordZoneChangesRequest<T extends Object>
+class CKRecordZoneChangesRequest<T>
 {
   final CKZone _zoneID;
   final CKSyncToken? _syncToken;

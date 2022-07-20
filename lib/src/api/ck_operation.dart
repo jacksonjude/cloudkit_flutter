@@ -148,7 +148,7 @@ class CKRecordQueryOperation<T> extends CKPostOperation
 }
 
 /// An operation to fetch record zone changes.
-class CKRecordZoneChangesOperation<T extends Object> extends CKRecordQueryOperation
+class CKRecordZoneChangesOperation<T> extends CKRecordQueryOperation
 {
   final CKRecordZoneChangesRequest _recordZoneChangesRequest;
   CKSyncToken? _currentSyncToken;
