@@ -228,10 +228,10 @@ class FetchEmployeeTestButtonState extends State<FetchEmployeeTestButton>
           }
 
           var queryOperation = CKRecordQueryOperation<Employee>(CKDatabase.PRIVATE_DATABASE, preloadAssets: true, context: context);
-          CKOperationCallback queryCallback = await queryOperation.execute();
+          CKOperationCallback<List<Employee>> queryCallback = await queryOperation.execute();
 
           List<Employee> employees = [];
-          if (queryCallback.state == CKOperationState.success) employees = queryCallback.response;
+          if (queryCallback.state == CKOperationState.success) employees = queryCallback.response!;
 
           switch (queryCallback.state)
           {

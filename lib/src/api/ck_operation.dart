@@ -20,16 +20,16 @@ enum CKOperationState
 }
 
 /// Contains a [CKOperationState] with the response from an operation.
-class CKOperationCallback
+class CKOperationCallback<T>
 {
   final CKOperationState state;
-  final dynamic response;
+  final T? response;
 
   CKOperationCallback(this.state, {this.response});
 }
 
 /// Contains a [CKSyncToken], a [CKOperationState], and the changed records from a fetch changes operation.
-class CKChangesOperationCallback<T> extends CKOperationCallback
+class CKChangesOperationCallback<T> extends CKOperationCallback<List<T>>
 {
   final List<T> changedRecords;
   final CKSyncToken? syncToken;
@@ -92,13 +92,13 @@ class CKCurrentUserOperation extends CKGetOperation
 
   /// Execute the current user operation.
   @override
-  Future<CKOperationCallback> execute() async
+  Future<CKOperationCallback<String>> execute() async
   {
     CKOperationCallback apiCallback = await super.execute();
     String? userString;
     if (apiCallback.state == CKOperationState.success) userString = apiCallback.response["userRecordName"];
 
-    return CKOperationCallback(apiCallback.state, response: userString);
+    return CKOperationCallback<String>(apiCallback.state, response: userString);
   }
 }
 
@@ -125,7 +125,7 @@ class CKRecordQueryOperation<T> extends CKPostOperation
 
   /// Execute the record query operation.
   @override
-  Future<CKOperationCallback> execute() async
+  Future<CKOperationCallback<List<T>>> execute() async
   {
     CKOperationCallback apiCallback = await super.execute();
 
@@ -143,12 +143,12 @@ class CKRecordQueryOperation<T> extends CKPostOperation
       });
     }
 
-    return CKOperationCallback(apiCallback.state, response: newLocalObjects);
+    return CKOperationCallback<List<T>>(apiCallback.state, response: newLocalObjects);
   }
 }
 
 /// An operation to fetch record zone changes.
-class CKRecordZoneChangesOperation<T> extends CKRecordQueryOperation
+class CKRecordZoneChangesOperation<T> extends CKRecordQueryOperation<T>
 {
   final CKRecordZoneChangesRequest _recordZoneChangesRequest;
   CKSyncToken? _currentSyncToken;
@@ -182,7 +182,7 @@ class CKRecordZoneChangesOperation<T> extends CKRecordQueryOperation
   @override
   Future<CKChangesOperationCallback<T>> execute() async
   {
-    CKOperationCallback recordChangesCallback = await super.execute();
+    CKOperationCallback<List<T>> recordChangesCallback = await super.execute();
 
     return CKChangesOperationCallback<T>.withOperationCallback(recordChangesCallback, _currentSyncToken);
   }

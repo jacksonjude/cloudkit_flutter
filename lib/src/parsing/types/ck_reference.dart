@@ -22,9 +22,9 @@ class CKReference<T>
     var queryOperation = CKRecordQueryOperation<T>(_database, zoneID: _zoneID, filters: [referenceUUIDFilter]);
     var operationCallback = await queryOperation.execute();
 
-    if (operationCallback.state == CKOperationState.success && operationCallback.response.length > 0)
+    if (operationCallback.state == CKOperationState.success && operationCallback.response!.length > 0)
     {
-      _cachedObject = operationCallback.response[0];
+      _cachedObject = operationCallback.response![0];
       return _cachedObject;
     }
 
