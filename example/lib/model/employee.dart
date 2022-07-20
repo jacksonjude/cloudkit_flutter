@@ -1,4 +1,5 @@
 import 'package:cloudkit_flutter/cloudkit_flutter_model.dart';
+import 'department.dart';
 
 @reflector
 @CKRecordTypeAnnotation("Employee")
@@ -18,6 +19,9 @@ class Employee
 
   @CKFieldAnnotation("profileImage")
   CKAsset? profileImage;
+
+  @CKReferenceFieldAnnotation<Department>("department")
+  CKReference<Department>? department;
 
   @override
   String toString()

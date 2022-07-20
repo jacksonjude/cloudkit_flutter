@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'dart:developer';
 
 import 'package:cloudkit_flutter/cloudkit_flutter_init.dart';
 import 'package:cloudkit_flutter/cloudkit_flutter_api.dart';
 
 import 'model/employee.dart';
+import 'model/department.dart';
 
 import 'main.reflectable.dart'; // Import generated code.
 // Run `flutter pub run build_runner build example` from the root directory to generate example.reflectable.dart code
@@ -16,12 +16,22 @@ void main() async
 }
 
 // To run this example code, you must have a CloudKit container with the following structure (as can be inferred from model/employee.dart):
+//
 // Employee: {
 //   name: String
 //   nicknames: List<String>
 //   genderRaw: int
 //   profileImage: CKAsset
+//   department: CKReference<Department>
 // }
+//
+// Department: {
+//   name: String
+//   location: String
+//   employees: List<CKReference<Employee>>
+// }
+//
+// Ensure that both the Employee and Department record types have queryable indices for the recordName field
 //
 // Once the container is created, enter the CloudKit container and API token (set up via the CloudKit dashboard & with the options specified in README.md) below:
 
@@ -34,7 +44,8 @@ Future<void> initializeCloudKit() async
   initializeReflectable();
 
   CKRecordParser.createRecordStructures([
-    Employee
+    Employee,
+    Department
   ]);
 
   await CKAPIManager.initManager(ckContainer, ckAPIToken, ckEnvironment);
@@ -258,19 +269,23 @@ class FetchEmployeeTestButtonState extends State<FetchEmployeeTestButton>
 
 void testEmployee(Employee testEmployee) async
 {
-  log(testEmployee.toString());
+  print(testEmployee.toString());
 
   // These are the nicknames for the employee, automatically converted from CloudKit to the local object
   var nicknames = testEmployee.nicknames ?? [];
-  log(nicknames.toString());
+  print(nicknames.toString());
 
   // This is the data for a profile image, which can be casted (via .getAsImage()) due to `preloadAssets: true` when the operation was called
   var _ = (testEmployee.profileImage?.getAsImage() ?? AssetImage("assets/generic-user.png")) as ImageProvider;
   // If `preloadAssets: false`, the asset would have to be downloaded directly:
   await testEmployee.profileImage?.fetchAsset();
-  log(testEmployee.profileImage?.size.toString() ?? 0.toString());
+  print(testEmployee.profileImage?.size.toString() ?? 0.toString());
 
   // This is a custom `Gender` object, converted from a raw int form in CloudKit
   var gender = testEmployee.gender ?? Gender.unknown;
-  log(gender.toString());
+  print(gender.toString());
+
+  // This is a referenced `Department` object, fetched from CloudKit
+  var department = await testEmployee.department?.fetchFromCloud();
+  print(department?.name);
 }
