@@ -10,4 +10,6 @@ class CKReferenceFieldAnnotation<T> extends CKFieldAnnotation
 
   CKReference createReference(String referenceUUID, CKDatabase database, {CKZone? zone}) =>
       CKReference<T>(referenceUUID, database, zoneID: zone);
+
+  List<CKReference<T>> createReferenceList() => <CKReference<T>>[];
 }

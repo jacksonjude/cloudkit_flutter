@@ -141,19 +141,15 @@ class CKRecordParser
         convertedValue = referenceAnnotation.createReference(
           rawValue[CKConstants.RECORD_NAME_FIELD],
           CKDatabase.databases.firstWhereOrNull((database) => database.toString() == rawValue["database"]) ?? database,
-          zone: CKZone(rawValue["zoneID"]["zoneName"])
+          zone: CKZone(rawValue["zoneID"] != null ? rawValue["zoneID"]["zoneName"] : null)
         );
         break;
       case CKFieldType.LIST_REFERENCE_TYPE:
         var referenceAnnotation = fieldStructure.annotation as CKReferenceFieldAnnotation;
-        List<CKReference> convertedList = [];
+        var convertedList = referenceAnnotation.createReferenceList();
         rawValue.forEach((reference) {
           convertedList.add(
-            referenceAnnotation.createReference(
-              reference[CKConstants.RECORD_NAME_FIELD],
-              CKDatabase.databases.firstWhereOrNull((database) => database.toString() == reference["database"]) ?? database,
-              zone: CKZone(reference["zoneID"]["zoneName"])
-            )
+            convertToLocalValue(CKFieldType.REFERENCE_TYPE, fieldStructure, reference, database)
           );
         });
         convertedValue = convertedList;
