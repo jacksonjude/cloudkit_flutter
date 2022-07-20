@@ -9,8 +9,6 @@ class CKFilter {
   final Map<String, dynamic> _fieldValueDictionary;
   final double? _distance;
 
-  ///// THIS PART IS A FIX FOR NON-SYSTEMFIELD FILTERS
-
   dynamic _fieldValue;
 
   CKFilter(this._fieldName, CKFieldType fieldType, dynamic fieldValue,
@@ -36,11 +34,7 @@ class CKFilter {
             : _fieldValue),
         'distance': _distance
       };
-
-  ///// END OF FIX
 }
-
-
 
 /// A container class for the types of CloudKit comparators used in [CKFilter] objects
 class CKComparator
