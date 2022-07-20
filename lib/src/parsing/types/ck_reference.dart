@@ -27,6 +27,8 @@ class CKReference<T>
       _cachedObject = operationCallback.response[0];
       return _cachedObject;
     }
+
+    return null;
   }
 
   /// Get the cached object

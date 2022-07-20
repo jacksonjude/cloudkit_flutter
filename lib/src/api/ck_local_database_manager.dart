@@ -15,22 +15,24 @@ class CKLocalDatabaseManager
 {
   static const _defaultDatabaseName = "cloudkit_flutter_sync.db";
   static const _defaultVersionNumber = 1;
+  static const _defaultCloudDatabase = CKDatabase.PRIVATE_DATABASE;
 
   static const _readwriteTransaction = "readwrite";
   static const _readTransaction = "read";
 
   final _databaseName;
   final _databaseVersion;
+  final CKDatabase _cloudDatabase;
   late final Database _databaseInstance;
 
-  CKLocalDatabaseManager(this._databaseName, this._databaseVersion) : _databaseEventHistory = CKDatabaseEventList();
+  CKLocalDatabaseManager(this._databaseName, this._databaseVersion, this._cloudDatabase) : _databaseEventHistory = CKDatabaseEventList();
 
   static CKLocalDatabaseManager? _instance;
 
   /// Get the shared instance of the [CKLocalDatabaseManager].
   static CKLocalDatabaseManager shared()
   {
-    if (_instance == null) _instance = CKLocalDatabaseManager(_defaultDatabaseName, _defaultVersionNumber);
+    if (_instance == null) _instance = CKLocalDatabaseManager(_defaultDatabaseName, _defaultVersionNumber, _defaultCloudDatabase);
     return _instance!;
   }
 
@@ -102,7 +104,7 @@ class CKLocalDatabaseManager
     var simpleJSON = await queryJSONObject(recordID);
     if (simpleJSON == null) return null;
 
-    T localObject = CKRecordParser.simpleJSONToLocalObject(simpleJSON);
+    T localObject = CKRecordParser.simpleJSONToLocalObject(simpleJSON, this._cloudDatabase);
     return localObject;
   }
 
@@ -132,7 +134,7 @@ class CKLocalDatabaseManager
     shouldTrackEvent ??= true;
     if (shouldTrackEvent)
     {
-      var currentLocalObject = CKRecordParser.simpleJSONToLocalObject<T>(currentLocalObjectJSON);
+      var currentLocalObject = CKRecordParser.simpleJSONToLocalObject<T>(currentLocalObjectJSON, this._cloudDatabase);
 
       _databaseEventHistory.add(CKDatabaseEvent<T>(
         this,

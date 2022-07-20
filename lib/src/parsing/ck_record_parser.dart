@@ -76,15 +76,15 @@ class CKRecordParser
   }
 
   /// Convert a CloudKit record JSON object to a local model object.
-  static T recordToLocalObject<T>(Map<String,dynamic> recordData, {CKDatabase? database})
+  static T recordToLocalObject<T>(Map<String,dynamic> recordData, CKDatabase database)
   {
     recordData = _recordToSimpleJSON(recordData);
-    var newLocalObject = simpleJSONToLocalObject<T>(recordData, database: database);
+    var newLocalObject = simpleJSONToLocalObject<T>(recordData, database);
 
     return newLocalObject;
   }
 
-  static T simpleJSONToLocalObject<T>(Map<String,dynamic> recordData, {CKDatabase? database})
+  static T simpleJSONToLocalObject<T>(Map<String,dynamic> recordData, CKDatabase database)
   {
     var recordStructure = getRecordStructureFromLocalType(T);
 
@@ -95,7 +95,7 @@ class CKRecordParser
       var rawValue = recordData[field.ckName];
       if (rawValue == null) return;
 
-      var convertedValue = convertToLocalValue(field.type, field, rawValue, database: database);
+      var convertedValue = convertToLocalValue(field.type, field, rawValue, database);
 
       instanceMirror.invokeSetter(field.localName, convertedValue);
     });
@@ -104,7 +104,7 @@ class CKRecordParser
   }
 
   /// Convert a single CloudKit record field to a local value.
-  static dynamic convertToLocalValue(CKFieldType fieldType, CKFieldStructure fieldStructure, dynamic rawValue, {CKDatabase? database})
+  static dynamic convertToLocalValue(CKFieldType fieldType, CKFieldStructure fieldStructure, dynamic rawValue, CKDatabase database)
   {
     var convertedValue = rawValue;
 
@@ -140,7 +140,7 @@ class CKRecordParser
         var referenceAnnotation = fieldStructure.annotation as CKReferenceFieldAnnotation;
         convertedValue = referenceAnnotation.createReference(
           rawValue[CKConstants.RECORD_NAME_FIELD],
-          database: CKDatabase.databases.firstWhereOrNull((database) => database.toString() == rawValue["database"]) ?? database,
+          CKDatabase.databases.firstWhereOrNull((database) => database.toString() == rawValue["database"]) ?? database,
           zone: CKZone(rawValue["zoneID"]["zoneName"])
         );
         break;
@@ -151,7 +151,7 @@ class CKRecordParser
           convertedList.add(
             referenceAnnotation.createReference(
               reference[CKConstants.RECORD_NAME_FIELD],
-              database: CKDatabase.databases.firstWhereOrNull((database) => database.toString() == reference["database"]) ?? database,
+              CKDatabase.databases.firstWhereOrNull((database) => database.toString() == reference["database"]) ?? database,
               zone: CKZone(reference["zoneID"]["zoneName"])
             )
           );
@@ -171,7 +171,7 @@ class CKRecordParser
           var newTestInstance = currentClassMirrorForType.newInstance("", []);
           if (newTestInstance is CKCustomFieldType)
           {
-            var baseConvertedValue = convertToLocalValue(CKFieldType.fromRecordType(fieldType.record), fieldStructure, rawValue, database: database);
+            var baseConvertedValue = convertToLocalValue(CKFieldType.fromRecordType(fieldType.record), fieldStructure, rawValue, database);
             convertedValue = currentClassMirrorForType.newInstance("fromRecordField", [baseConvertedValue]);
             break;
           }

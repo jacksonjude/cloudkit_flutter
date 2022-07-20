@@ -95,7 +95,7 @@ void main() {
           "type": "STRING"
         }
       }
-    });
+    }, CKDatabase.PUBLIC_DATABASE);
     expect(localSchedule.toString(), scheduleObjectString);
 
     WeekSchedule localWeekSchedule = CKRecordParser.recordToLocalObject<WeekSchedule>({
@@ -117,7 +117,7 @@ void main() {
           "type": "TIMESTAMP"
         }
       }
-    });
+    }, CKDatabase.PUBLIC_DATABASE);
     expect(localWeekSchedule.toString(), weekScheduleObjectString);
   });
 }
