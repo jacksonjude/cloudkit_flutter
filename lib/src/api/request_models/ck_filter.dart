@@ -10,7 +10,12 @@ class CKFilter
   final Map<String,dynamic> _fieldValueDictionary;
   final double? _distance;
 
-  CKFilter(this._fieldName, CKFieldType fieldType, dynamic fieldValue, this._comparator, {double? distance}) : _fieldValueDictionary = {'value': {_fieldName: fieldValue}, 'type': fieldType.record}, _distance = distance;
+  CKFilter(this._fieldName, CKFieldType fieldType, dynamic fieldValue, this._comparator, {double? distance}):
+    _fieldValueDictionary = {
+      'value': CKConstants.isSystemFieldName(_fieldName) ? {_fieldName: fieldValue} : fieldValue,
+      'type': fieldType.record
+    },
+    _distance = distance;
 
   /// Convert the filter to JSON.
   Map<String, dynamic> toJSON() => {
