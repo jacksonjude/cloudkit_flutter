@@ -134,8 +134,8 @@ void testRecordParser()
 
 Future<void> testPublicDatabase() async
 {
-  const String ckContainer = "iCloud.com.jacksonjude.CloudKitTest";
-  const String ckAPIToken = "0a4566adae1a9ae667cb694b82400eac08ef228f0bba384273248012a7dfc54c";
+  const String ckContainer = "";
+  const String ckAPIToken = "";
   const CKEnvironment ckEnvironment = CKEnvironment.DEVELOPMENT_ENVIRONMENT;
 
   await CKAPIManager.initManager(ckContainer, ckAPIToken, ckEnvironment, shouldFetchWebAuthToken: false);
