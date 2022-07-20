@@ -21,7 +21,7 @@ class CKRecordParser
   static Map<Type,CKRecordStructure> _recordStructures = {};
 
   /// Create [CKRecordStructure] objects from the provided annotated model classes.
-  static void createRecordStructures(List<Type> classTypes, {CKLocalDatabaseManager? databaseManager})
+  static void createRecordStructures(List<Type> classTypes, {CKLocalDatabaseManager? databaseManager, bool shouldInitializeDatabase = true})
   {
     Map<Type,CKRecordStructure> recordStructures = {};
 
@@ -62,7 +62,10 @@ class CKRecordParser
 
     CKRecordParser._recordStructures = recordStructures;
 
-    CKLocalDatabaseManager.initializeDatabase(_recordStructures, manager: databaseManager);
+    if (shouldInitializeDatabase)
+    {
+      CKLocalDatabaseManager.initializeDatabase(_recordStructures, manager: databaseManager);
+    }
   }
 
   static bool _isTypeInArray<T>(List<Object> array)
