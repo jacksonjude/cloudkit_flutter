@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:cloudkit_flutter/cloudkit_flutter_init.dart';
 import 'package:cloudkit_flutter/cloudkit_flutter_api.dart';
@@ -33,13 +36,23 @@ void main() async
 //
 // Ensure that both the Employee and Department record types have queryable indices for the recordName field
 //
-// Once the container is created, enter the CloudKit container and API token (set up via the CloudKit dashboard & with the options specified in README.md) below:
+// Once the container is created, enter the CloudKit container and API token (set up via the CloudKit dashboard & with the options specified in README.md) in an environment.json file:
+
+Future<dynamic> fetchJSON(String jsonPath) async
+{
+  WidgetsFlutterBinding.ensureInitialized();
+  String jsonString = await rootBundle.loadString(jsonPath);
+  Map<String,dynamic> jsonData = jsonDecode(jsonString);
+  return jsonData;
+}
 
 Future<void> initializeCloudKit() async
 {
-  const String ckContainer = ""; // YOUR CloudKit CONTAINER NAME HERE
-  const String ckAPIToken = ""; // YOUR CloudKit API TOKEN HERE
-  const CKEnvironment ckEnvironment = CKEnvironment.DEVELOPMENT_ENVIRONMENT;
+  var environmentVariables = await fetchJSON("lib/environment.json");
+
+  final String ckContainer = environmentVariables["ckContainer"];
+  final String ckAPIToken = environmentVariables["ckAPIToken"];
+  final CKEnvironment ckEnvironment = CKEnvironment(environmentVariables["ckEnvironment"]);
 
   initializeReflectable();
 

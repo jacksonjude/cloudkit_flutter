@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cloudkit_flutter/cloudkit_flutter.dart';
 
@@ -134,11 +137,19 @@ void testRecordParser()
 
 Future<void> testPublicDatabase() async
 {
-  const String ckContainer = "";
-  const String ckAPIToken = "";
-  const CKEnvironment ckEnvironment = CKEnvironment.DEVELOPMENT_ENVIRONMENT;
+  var environmentVariables = await fetchJSON("test/environment.json");
+
+  final String ckContainer = environmentVariables["ckContainer"];
+  final String ckAPIToken = environmentVariables["ckAPIToken"];
+  final CKEnvironment ckEnvironment = CKEnvironment(environmentVariables["ckEnvironment"]);
 
   await CKAPIManager.initManager(ckContainer, ckAPIToken, ckEnvironment, shouldFetchWebAuthToken: false);
+
+  test('standard fetch', () async {
+    var queryOperation = CKRecordQueryOperation<Employee>(CKDatabase.PUBLIC_DATABASE);
+    CKOperationCallback<List<Employee>> queryCallback = await queryOperation.execute();
+    expect(queryCallback.state, CKOperationState.success);
+  });
 
   test('recordName filter fetch', () async {
     var recordNameFilter = CKFilter(CKConstants.RECORD_NAME_FIELD, CKFieldType.STRING_TYPE, "8D863AD6-F966-DB2B-B809-AC258B72BDCE", CKComparator.EQUALS);
@@ -161,4 +172,12 @@ Future<void> testPublicDatabase() async
     expect(nicknameQueryCallback.state, CKOperationState.success);
     expect(nicknameQueryCallback.response?.length, 1);
   });
+}
+
+Future<dynamic> fetchJSON(String jsonPath) async
+{
+  final file = new File(jsonPath);
+  String jsonString = await file.readAsString();
+  Map<String,dynamic> jsonData = jsonDecode(jsonString);
+  return jsonData;
 }
