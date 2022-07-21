@@ -59,7 +59,7 @@ class CKAPIManager
       var originalURI = Uri.parse(CKConstants.API_URL_BASE + "/" + this._ckContainer + "/" + this._environment.toString() + "/" + database.toString() + "/" + operationPath);
       var modifiedURIWithParameters = Uri.https(originalURI.authority, originalURI.path, uriQueryParameters);
 
-      var response;
+      http.Response response;
       switch (operationProtocol)
       {
         case CKOperationProtocol.get:
