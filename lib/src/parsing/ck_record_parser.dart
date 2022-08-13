@@ -258,6 +258,10 @@ class CKRecordParser
         convertedValue = convertedList;
         break;
 
+      case CKFieldType.ASSET_TYPE: // TODO: work with actual upload URLs n stuff
+        convertedValue = (rawValue as CKAsset).toJSON();
+        break;
+
       default:
         if (field.type != null && rawValue is CKCustomFieldType)
         {

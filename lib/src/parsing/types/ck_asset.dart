@@ -35,4 +35,10 @@ class CKAsset
 
     return MemoryImage(cachedData!);
   }
+
+  /// Convert the asset to JSON
+  Map<String, dynamic> toJSON() => {
+    "size": size,
+    "downloadURL": downloadURL
+  };
 }
