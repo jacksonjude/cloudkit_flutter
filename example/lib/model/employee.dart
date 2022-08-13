@@ -2,7 +2,7 @@ import 'package:cloudkit_flutter/cloudkit_flutter_model.dart';
 import 'department.dart';
 
 @reflector
-@CKRecordTypeAnnotation("Employee")
+@CKRecordTypeAnnotation<Employee>("Employee")
 class Employee
 {
   @CKRecordNameAnnotation()
