@@ -1,3 +1,5 @@
+import 'package:cloudkit_flutter/src/api/ck_local_database_manager.dart';
+
 import '../../api/ck_operation.dart';
 import '../../api/request_models/ck_filter.dart';
 import '../../api/request_models/ck_zone.dart';
@@ -5,7 +7,7 @@ import '../../ck_constants.dart';
 import 'ck_field_type.dart';
 
 /// A representation of a CloudKit reference.
-class CKReference<T>
+class CKReference<T extends Object>
 {
   final String referenceUUID;
   final CKDatabase _database;
@@ -16,7 +18,7 @@ class CKReference<T>
   CKReference(this.referenceUUID, this._database, {CKZone? zoneID}) : _zoneID = zoneID ?? CKZone();
 
   /// Fetch the referenced object from CloudKit
-  Future<T?> fetchFromCloud() async
+  Future<T?> fetchCloud() async
   {
     var referenceUUIDFilter = CKFilter(CKConstants.RECORD_NAME_FIELD, CKFieldType.STRING_TYPE, referenceUUID, CKComparator.EQUALS);
     var queryOperation = CKRecordQueryOperation<T>(_database, zoneID: _zoneID, filters: [referenceUUIDFilter]);
@@ -31,8 +33,25 @@ class CKReference<T>
     return null;
   }
 
+  /// Fetch the referenced object from SQLite
+  Future<T?> fetch({CKLocalDatabaseManager? manager}) async
+  {
+    var managerToUse = manager ?? CKLocalDatabaseManager.shared;
+    var localObject = await managerToUse.queryByID<T>(referenceUUID);
+    return localObject;
+  }
+
+  static Future<List<T?>> fetchAll<T extends Object>(List<CKReference<T>> references, {CKLocalDatabaseManager? manager}) async
+  {
+    List<T?> localObjects = [];
+    await Future.forEach(references, (CKReference<T> reference) async {
+      localObjects.add(await reference.fetch(manager: manager));
+    });
+    return localObjects;
+  }
+
   /// Get the cached object
-  T? getObject() => _cachedObject;
+  T? get cache => _cachedObject;
 
   /// Convert the reference to JSON.
   Map<String,dynamic> toJSON() => {
