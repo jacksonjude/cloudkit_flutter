@@ -54,7 +54,7 @@ abstract class CKOperation
   final CKDatabase _database;
   final BuildContext? _context; // to launch web view authentication, if needed
 
-  CKOperation(CKDatabase database, {CKAPIManager? apiManager, BuildContext? context}) : _apiManager = apiManager ?? CKAPIManager.shared(), _database = database, _context = context;
+  CKOperation(CKDatabase database, {CKAPIManager? apiManager, BuildContext? context}) : _apiManager = apiManager ?? CKAPIManager.shared, _database = database, _context = context;
 
   String _getAPIPath();
 

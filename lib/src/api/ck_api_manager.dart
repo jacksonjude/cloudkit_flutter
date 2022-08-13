@@ -22,7 +22,7 @@ class CKAPIManager
   static CKAPIManager? _instance;
 
   /// Get the shared instance of the [CKAPIManager].
-  static CKAPIManager shared()
+  static CKAPIManager get shared
   {
     if (_instance == null) _instance = CKAPIManager();
     return _instance!;
@@ -31,7 +31,7 @@ class CKAPIManager
   /// Initialize the shared API manager for the application. Optionally, a custom [CKAPIManager] can be passed in.
   static Future<void> initManager(String ckContainer, String ckAPIToken, CKEnvironment environment, {CKAPIManager? manager, bool shouldFetchWebAuthToken = true}) async
   {
-    var managerToInit = manager ?? CKAPIManager.shared();
+    var managerToInit = manager ?? CKAPIManager.shared;
 
     managerToInit._ckContainer = ckContainer;
     managerToInit._ckAPIToken = ckAPIToken;
