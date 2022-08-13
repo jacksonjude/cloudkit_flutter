@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tuple/tuple.dart';
 
 import 'ck_api_manager.dart';
 import 'request_models/ck_record_query_request.dart';
@@ -8,6 +9,7 @@ import 'request_models/ck_query.dart';
 import 'request_models/ck_filter.dart';
 import 'request_models/ck_sort_descriptor.dart';
 import 'request_models/ck_sync_token.dart';
+import 'request_models/ck_record_modify_request.dart';
 import '../parsing/ck_record_parser.dart';
 import '../ck_constants.dart';
 
@@ -189,4 +191,31 @@ class CKRecordZoneChangesOperation<T> extends CKRecordQueryOperation<T>
 }
 
 /// An operation to modify records
-// class CKRecordModifyOperation
+class CKRecordModifyOperation<T extends Object> extends CKPostOperation
+{
+  late final CKRecordModifyRequest _recordModifyRequest;
+
+  CKRecordModifyOperation(CKDatabase database, {CKRecordModifyRequest? modifyRequest, List<Tuple2<T,CKRecordOperationType>>? objectsToModify, CKZone? zoneID, bool? atomic, List<String>? recordFields, bool? numbersAsStrings, CKAPIManager? apiManager, BuildContext? context}) : super(database, apiManager: apiManager, context: context)
+  {
+    this._recordModifyRequest = modifyRequest ?? CKRecordModifyRequest((objectsToModify ?? []).map((objectOperationPair) {
+      var object = objectOperationPair.item1;
+      var operationType = objectOperationPair.item2;
+
+      var recordJSON = CKRecordParser.localObjectToRecord<T>(object);
+      return CKRecordOperation(operationType, recordJSON, null);
+    }).toList(), zoneID ?? CKZone(), atomic, recordFields, numbersAsStrings);
+  }
+
+  @override
+  String _getAPIPath() => "records/modify";
+
+  @override
+  Map<String,dynamic>? _getBody() => _recordModifyRequest.toJSON();
+
+  @override
+  Future<CKOperationCallback> execute() async
+  {
+    CKOperationCallback recordModifyCallback = await super.execute();
+    return recordModifyCallback;
+  }
+}
