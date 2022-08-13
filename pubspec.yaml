@@ -18,7 +18,7 @@ dependencies:
   build_runner: ^2.1.11
   shared_preferences: ^2.0.15
   sqflite: ^2.0.3
-  idb_sqflite: ^1.1.1
+  tuple: ^2.0.0
 
 dev_dependencies:
   flutter_test:
