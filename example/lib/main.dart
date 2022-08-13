@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cloudkit_flutter/cloudkit_flutter_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -56,12 +57,13 @@ Future<void> initializeCloudKit() async
 
   initializeReflectable();
 
-  CKRecordParser.createRecordStructures([
+  var recordStructures = CKRecordParser.createRecordStructures([
     Employee,
     Department
   ]);
 
   await CKAPIManager.initManager(ckContainer, ckAPIToken, ckEnvironment);
+  CKLocalDatabaseManager.initializeDatabase(recordStructures);
 }
 
 class CKTestApp extends StatelessWidget
@@ -240,7 +242,7 @@ class FetchEmployeeTestButtonState extends State<FetchEmployeeTestButton>
             return;
           }
 
-          var queryOperation = CKRecordQueryOperation<Employee>(CKDatabase.PRIVATE_DATABASE, preloadAssets: true, context: context);
+          var queryOperation = CKRecordQueryOperation<Employee>(CKDatabase.PRIVATE_DATABASE, zoneID: CKZone("testZone"), preloadAssets: true, context: context);
           CKOperationCallback<List<Employee>> queryCallback = await queryOperation.execute();
 
           List<Employee> employees = [];
@@ -299,6 +301,18 @@ void testEmployee(Employee testEmployee) async
   print(gender.toString());
 
   // This is a referenced `Department` object, fetched from CloudKit
-  var department = await testEmployee.department?.fetchFromCloud();
+  var department = await testEmployee.department?.fetchCloud();
   print(department?.name);
+
+  var employeeRecords = (await CKRecordZoneChangesOperation<Employee>(CKZone("testZone"), CKDatabase.PRIVATE_DATABASE).execute()).changedRecords;
+  await CKLocalDatabaseManager.shared.insertAll<Employee>(employeeRecords);
+
+  var departmentRecords = (await CKRecordZoneChangesOperation<Department>(CKZone("testZone"), CKDatabase.PRIVATE_DATABASE).execute()).changedRecords;
+  await CKLocalDatabaseManager.shared.insertAll<Department>(departmentRecords);
+
+  var testEmployeeFetch = await CKLocalDatabaseManager.shared.queryByID<Employee>(testEmployee.uuid!);
+  print(testEmployeeFetch);
+  var departmentFetch = await testEmployeeFetch?.department?.fetch();
+  var departmentEmployeeFetch = await CKReference.fetchAll<Employee>(departmentFetch?.employees ?? []);
+  print(departmentEmployeeFetch);
 }

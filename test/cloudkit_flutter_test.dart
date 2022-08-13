@@ -72,7 +72,7 @@ void main() async {
     WeekSchedule,
     Employee,
     Department
-  ], shouldInitializeDatabase: false);
+  ]);
 
   testRecordParser();
   await testPublicDatabase();
@@ -160,7 +160,7 @@ Future<void> testPublicDatabase() async
     {
       var employee = recordNameQueryCallback.response![0];
       expect(employee.name, "Bob");
-      var department = await employee.department?.fetchFromCloud();
+      var department = await employee.department?.fetchCloud();
       expect(department?.name, "Athletics");
     }
   });
