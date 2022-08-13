@@ -13,7 +13,6 @@ import 'ck_record_structure.dart';
 import 'ck_field_structure.dart';
 import 'types/ck_field_type.dart';
 import '../api/request_models/ck_zone.dart';
-import '../api/ck_local_database_manager.dart';
 
 /// The class that handles local model class annotation parsing.
 class CKRecordParser
@@ -21,7 +20,7 @@ class CKRecordParser
   static Map<Type,CKRecordStructure> _recordStructures = {};
 
   /// Create [CKRecordStructure] objects from the provided annotated model classes.
-  static void createRecordStructures(List<Type> classTypes, {CKLocalDatabaseManager? databaseManager, bool shouldInitializeDatabase = true})
+  static Map<Type,CKRecordStructure> createRecordStructures(List<Type> classTypes)
   {
     Map<Type,CKRecordStructure> recordStructures = {};
 
@@ -62,10 +61,7 @@ class CKRecordParser
 
     CKRecordParser._recordStructures = recordStructures;
 
-    if (shouldInitializeDatabase)
-    {
-      CKLocalDatabaseManager.initializeDatabase(_recordStructures, manager: databaseManager);
-    }
+    return recordStructures;
   }
 
   static bool _isTypeInArray<T>(List<Object> array)
@@ -274,7 +270,7 @@ class CKRecordParser
     return convertedValue;
   }
 
-  static CKRecordStructure _getRecordStructure(Type? localType, String? ckRecordType)
+  static CKRecordStructure _getRecordStructure({Type? localType, String? ckRecordType})
   {
     return CKRecordParser._recordStructures.values.firstWhere((recordData) => recordData.localType == localType || recordData.ckRecordType == ckRecordType);
   }
@@ -282,13 +278,13 @@ class CKRecordParser
   /// Get a [CKRecordStructure] that matches a given local Type
   static CKRecordStructure getRecordStructureFromLocalType(Type localType)
   {
-    return _getRecordStructure(localType, null);
+    return _getRecordStructure(localType: localType);
   }
 
   /// Get a [CKRecordStructure] that matches a given record type string
   static CKRecordStructure getRecordStructureFromRecordType(String ckRecordType)
   {
-    return _getRecordStructure(null, ckRecordType);
+    return _getRecordStructure(ckRecordType: ckRecordType);
   }
 
   static Map<String,dynamic> _recordToSimpleJSON(Map<String,dynamic> recordData)
