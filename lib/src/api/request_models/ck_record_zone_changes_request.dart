@@ -16,7 +16,7 @@ class CKRecordZoneChangesRequest<T>
   /// Convert the record zone changes to JSON.
   Map<String, dynamic> toJSON() => {
     'zoneID': _zoneID.toJSON(),
-    'syncToken': _syncToken.toString(),
+    'syncToken': _syncToken != null ? _syncToken.toString() : null,
     'resultsLimit': _resultsLimit,
     'desiredRecordTypes': [CKRecordParser.getRecordStructureFromLocalType(T).ckRecordType],
     'desiredKeys': _recordFields

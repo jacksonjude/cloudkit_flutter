@@ -176,7 +176,7 @@ class CKRecordZoneChangesOperation<T> extends CKRecordQueryOperation<T>
     if (response["zones"].length <= 0) return [];
 
     var zoneChangesResponse = response["zones"][0];
-    _currentSyncToken = zoneChangesResponse["syncToken"];
+    _currentSyncToken = CKSyncToken(zoneChangesResponse["syncToken"]);
     return zoneChangesResponse["records"];
   }
 
