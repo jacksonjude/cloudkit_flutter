@@ -304,7 +304,9 @@ void testEmployee(Employee testEmployee) async
   var department = await testEmployee.department?.fetchCloud();
   print(department?.name);
 
-  await Future.forEach([Employee, Department], (Type type) async {
+  // TODO: Clean up this demo code
+  for (var type in [Employee, Department])
+  {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(type);
     if (recordStructure.recordTypeAnnotation == null) return;
     var recordTypeAnnotation = recordStructure.recordTypeAnnotation!;
@@ -332,7 +334,7 @@ void testEmployee(Employee testEmployee) async
     });
 
     await CKLocalDatabaseManager.shared.databaseEventHistory.synchronizeAll();
-  });
+  }
 
   var testEmployeeFetch = await CKLocalDatabaseManager.shared.queryByID<Employee>(testEmployee.uuid!);
   print(testEmployeeFetch);
