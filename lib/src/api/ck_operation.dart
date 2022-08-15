@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tuple/tuple.dart';
+import 'package:quiver/iterables.dart';
 
 import 'ck_api_manager.dart';
 import 'request_models/ck_record_query_request.dart';
@@ -33,11 +34,13 @@ class CKOperationCallback<T>
 /// Contains a [CKSyncToken], a [CKOperationState], and the changed records from a fetch changes operation.
 class CKChangesOperationCallback<T> extends CKOperationCallback<List<T>>
 {
-  final List<T> changedRecords;
   final CKSyncToken? syncToken;
+  final List<Tuple2<T,CKRecordChangeType>> recordChanges;
 
-  CKChangesOperationCallback(CKOperationState state, this.changedRecords, this.syncToken) : super(state, response: changedRecords);
-  CKChangesOperationCallback.withOperationCallback(CKOperationCallback operationCallback, this.syncToken) : changedRecords = operationCallback.response ?? [], super(operationCallback.state, response: operationCallback.response);
+  // CKChangesOperationCallback(CKOperationState state, this.changedRecords, this.syncToken) : super(state, response: changedRecords);
+  CKChangesOperationCallback.withOperationCallback(CKOperationCallback<List<T>> operationCallback, List<CKRecordChangeType>? changeTypes, this.syncToken) :
+      recordChanges = zip([operationCallback.response ?? [], changeTypes ?? []]).map((recordChangePair) => Tuple2<T,CKRecordChangeType>.fromList(recordChangePair)).toList(),
+      super(operationCallback.state, response: operationCallback.response);
 }
 
 /// Denotes the protocol type of an operation.
@@ -149,11 +152,18 @@ class CKRecordQueryOperation<T> extends CKPostOperation
   }
 }
 
+enum CKRecordChangeType
+{
+  update,
+  delete
+}
+
 /// An operation to fetch record zone changes.
 class CKRecordZoneChangesOperation<T> extends CKRecordQueryOperation<T>
 {
   final CKRecordZoneChangesRequest _recordZoneChangesRequest;
   CKSyncToken? _currentSyncToken;
+  List<CKRecordChangeType>? _changeTypes;
 
   CKRecordZoneChangesOperation(CKZone zoneID, CKDatabase database, {CKRecordZoneChangesRequest? zoneChangesRequest, CKSyncToken? syncToken, int? resultsLimit, List<String>? recordFields, bool? preloadAssets, CKAPIManager? apiManager, BuildContext? context}) :
     this._recordZoneChangesRequest = zoneChangesRequest ?? CKRecordZoneChangesRequest<T>(zoneID, syncToken, resultsLimit, recordFields),
@@ -171,13 +181,17 @@ class CKRecordZoneChangesOperation<T> extends CKRecordQueryOperation<T>
   };
 
   @override
-  List<dynamic> _handleResponse(dynamic response)
+  List<dynamic> _handleResponse(dynamic response) // TODO: Error handling
   {
     if (response["zones"].length <= 0) return [];
 
     var zoneChangesResponse = response["zones"][0];
     _currentSyncToken = CKSyncToken(zoneChangesResponse["syncToken"]);
-    return zoneChangesResponse["records"];
+
+    List records = zoneChangesResponse["records"];
+    _changeTypes = records.map((recordJSON) => !(recordJSON["deleted"] as bool) ? CKRecordChangeType.update : CKRecordChangeType.delete).toList();
+
+    return records;
   }
 
   /// Execute the record zone changes.
@@ -185,8 +199,7 @@ class CKRecordZoneChangesOperation<T> extends CKRecordQueryOperation<T>
   Future<CKChangesOperationCallback<T>> execute() async
   {
     CKOperationCallback<List<T>> recordChangesCallback = await super.execute();
-
-    return CKChangesOperationCallback<T>.withOperationCallback(recordChangesCallback, _currentSyncToken);
+    return CKChangesOperationCallback<T>.withOperationCallback(recordChangesCallback, _changeTypes, _currentSyncToken);
   }
 }
 

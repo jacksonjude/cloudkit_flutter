@@ -14,11 +14,12 @@ dependencies:
 
   webview_flutter: ^3.0.4
   http: ^0.13.4
-  reflectable: ^3.0.8
+  reflectable: 3.0.8
   build_runner: ^2.1.11
   shared_preferences: ^2.0.15
   sqflite: ^2.0.3
   tuple: ^2.0.0
+  quiver: ^3.1.0
 
 dev_dependencies:
   flutter_test:
