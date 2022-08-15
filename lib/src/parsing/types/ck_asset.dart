@@ -14,7 +14,7 @@ class CKAsset
   /// The cached version of the asset.
   Uint8List? cachedData;
 
-  CKAsset(this.size, {this.downloadURL});
+  CKAsset(this.size, {this.downloadURL, this.cachedData});
 
   /// Download the asset.
   Future<Uint8List?> fetchAsset() async
@@ -39,6 +39,7 @@ class CKAsset
   /// Convert the asset to JSON
   Map<String, dynamic> toJSON() => {
     "size": size,
-    "downloadURL": downloadURL
+    "downloadURL": downloadURL,
+    "cachedData": cachedData
   };
 }

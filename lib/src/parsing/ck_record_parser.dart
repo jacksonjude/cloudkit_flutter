@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:reflectable/reflectable.dart';
 import 'package:collection/collection.dart';
 
@@ -156,7 +158,7 @@ class CKRecordParser
         break;
 
       case CKFieldType.ASSET_TYPE:
-        var newAsset = CKAsset(rawValue["size"], downloadURL: rawValue["downloadURL"]);
+        var newAsset = CKAsset(rawValue["size"], downloadURL: rawValue["downloadURL"], cachedData: rawValue["cachedData"] != null ? Uint8List.fromList(rawValue["cachedData"].cast<int>()) : null);
         convertedValue = newAsset;
         break;
 
