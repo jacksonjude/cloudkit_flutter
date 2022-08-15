@@ -304,11 +304,35 @@ void testEmployee(Employee testEmployee) async
   var department = await testEmployee.department?.fetchCloud();
   print(department?.name);
 
-  var employeeRecords = (await CKRecordZoneChangesOperation<Employee>(CKZone("testZone"), CKDatabase.PRIVATE_DATABASE).execute()).changedRecords;
-  await CKLocalDatabaseManager.shared.insertAll<Employee>(employeeRecords);
+  await Future.forEach([Employee, Department], (Type type) async {
+    var recordStructure = CKRecordParser.getRecordStructureFromLocalType(type);
+    if (recordStructure.recordTypeAnnotation == null) return;
+    var recordTypeAnnotation = recordStructure.recordTypeAnnotation!;
 
-  var departmentRecords = (await CKRecordZoneChangesOperation<Department>(CKZone("testZone"), CKDatabase.PRIVATE_DATABASE).execute()).changedRecords;
-  await CKLocalDatabaseManager.shared.insertAll<Department>(departmentRecords);
+    var zoneChangesOperation = recordTypeAnnotation.createRecordZoneChangesOperation(CKZone("testZone"), CKDatabase.PRIVATE_DATABASE);
+    var operationCallback = await zoneChangesOperation.execute();
+    if (operationCallback.state != CKOperationState.success) return;
+
+    operationCallback.recordChanges.forEach((recordChange) {
+      var objectID = CKRecordParser.getIDFromLocalObject(recordChange.item1, recordStructure);
+
+      CKDatabaseEventType databaseEventType;
+      switch (recordChange.item2)
+      {
+        case CKRecordChangeType.update:
+          databaseEventType = CKDatabaseEventType.insert;
+          break;
+
+        case CKRecordChangeType.delete:
+          databaseEventType = CKDatabaseEventType.delete;
+          break;
+      }
+
+      CKLocalDatabaseManager.shared.databaseEventHistory.add(recordTypeAnnotation.createEvent(objectID, databaseEventType, localObject: recordChange.item1));
+    });
+
+    await CKLocalDatabaseManager.shared.databaseEventHistory.synchronizeAll();
+  });
 
   var testEmployeeFetch = await CKLocalDatabaseManager.shared.queryByID<Employee>(testEmployee.uuid!);
   print(testEmployeeFetch);

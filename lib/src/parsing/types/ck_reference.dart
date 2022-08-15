@@ -38,6 +38,7 @@ class CKReference<T extends Object>
   {
     var managerToUse = manager ?? CKLocalDatabaseManager.shared;
     var localObject = await managerToUse.queryByID<T>(referenceUUID);
+    _cachedObject = localObject;
     return localObject;
   }
 
