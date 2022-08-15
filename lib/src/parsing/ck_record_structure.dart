@@ -1,14 +1,17 @@
+import 'package:cloudkit_flutter/src/parsing/annotations/ck_record_type_annotation.dart';
 import 'package:reflectable/reflectable.dart';
 
 import 'ck_field_structure.dart';
 
-class CKRecordStructure {
+class CKRecordStructure
+{
   final Type localType;
   final String ckRecordType;
   final ClassMirror localClassMirror;
+  final CKRecordTypeAnnotation? recordTypeAnnotation;
   List<CKFieldStructure> fields = [];
 
-  CKRecordStructure(this.localType, this.ckRecordType, this.localClassMirror);
+  CKRecordStructure(this.localType, this.ckRecordType, this.localClassMirror, this.recordTypeAnnotation);
 
   @override
   String toString() {
