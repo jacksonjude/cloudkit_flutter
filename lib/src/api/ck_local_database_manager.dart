@@ -25,7 +25,7 @@ class CKLocalDatabaseManager
   late final CKZone _cloudZone;
   late final Database _databaseInstance;
 
-  CKLocalDatabaseManager(this._databaseName, this._databaseVersion) : _databaseEventHistory = CKDatabaseEventList();
+  CKLocalDatabaseManager(this._databaseName, this._databaseVersion) : databaseEventHistory = CKDatabaseEventList();
 
   static CKLocalDatabaseManager? _instance;
 
@@ -36,9 +36,9 @@ class CKLocalDatabaseManager
     return _instance!;
   }
 
-  CKDatabaseEventList _databaseEventHistory;
+  CKDatabaseEventList databaseEventHistory;
 
-  static void initializeDatabase(Map<Type,CKRecordStructure> recordStructures, {CKDatabase? database, CKZone? zone, CKLocalDatabaseManager? manager}) async
+  static Future<void> initializeDatabase(Map<Type,CKRecordStructure> recordStructures, {CKDatabase? database, CKZone? zone, CKLocalDatabaseManager? manager}) async
   {
     WidgetsFlutterBinding.ensureInitialized();
 
@@ -60,16 +60,16 @@ class CKLocalDatabaseManager
           var tableColumnDefinitions = recordStructure.fields.where((fieldStructure) {
             return !fieldStructure.type.sqlite.isList;
           }).map((fieldStructure) {
-            return '${fieldStructure.ckName} ${fieldStructure.type.sqlite.baseType} ${fieldStructure.ckName == CKConstants.RECORD_NAME_FIELD ? "PRIMARY KEY" : ""}';
+            return '`${fieldStructure.ckName}` ${fieldStructure.type.sqlite.baseType}${fieldStructure.ckName == CKConstants.RECORD_NAME_FIELD ? " PRIMARY KEY" : ""}';
           }).join(", ");
 
-          await db.execute('CREATE TABLE ${recordStructure.ckRecordType} ($tableColumnDefinitions)');
+          await db.execute('CREATE TABLE `${recordStructure.ckRecordType}` ($tableColumnDefinitions)');
 
           var listFields = recordStructure.fields.where((fieldStructure) {
             return fieldStructure.type.sqlite.isList;
           });
           await Future.forEach(listFields, (CKFieldStructure fieldStructure) async {
-            await db.execute('CREATE TABLE ${recordStructure.ckRecordType}_${fieldStructure.ckName} (${recordStructure.ckRecordType}ID TEXT, ${fieldStructure.ckName} ${fieldStructure.type.sqlite.baseType})');
+            await db.execute('CREATE TABLE `${recordStructure.ckRecordType}_${fieldStructure.ckName}` (`${recordStructure.ckRecordType}ID` TEXT, `${fieldStructure.ckName}` ${fieldStructure.type.sqlite.baseType})');
           });
         }
       }
@@ -81,25 +81,28 @@ class CKLocalDatabaseManager
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
     await Future.forEach(recordStructure.fields, (CKFieldStructure field) async {
-      switch (field.type)
+      if (recordJSON[field.ckName] != null)
       {
-        case CKFieldType.REFERENCE_TYPE:
-          recordJSON[field.ckName] = recordJSON[field.ckName][CKConstants.RECORD_NAME_FIELD];
-          break;
+        switch (field.type)
+        {
+          case CKFieldType.REFERENCE_TYPE:
+            recordJSON[field.ckName] = recordJSON[field.ckName][CKConstants.RECORD_NAME_FIELD];
+            break;
 
-        case CKFieldType.LIST_REFERENCE_TYPE:
-          recordJSON[field.ckName] = (recordJSON[field.ckName] as List<Map<String, dynamic>>).map((referenceJSON) => referenceJSON[CKConstants.RECORD_NAME_FIELD]).toList();
-          break;
+          case CKFieldType.LIST_REFERENCE_TYPE:
+            recordJSON[field.ckName] = (recordJSON[field.ckName] as List<Map<String, dynamic>>).map((referenceJSON) => referenceJSON[CKConstants.RECORD_NAME_FIELD]).toList();
+            break;
 
-        case CKFieldType.ASSET_TYPE:
-          recordJSON[field.ckName] = jsonEncode(recordJSON[field.ckName]);
-          break;
+          case CKFieldType.ASSET_TYPE:
+            recordJSON[field.ckName] = jsonEncode(recordJSON[field.ckName]);
+            break;
+        }
       }
 
       if (field.type.sqlite.isList)
       {
-        List objectsToInsert = recordJSON[field.ckName];
-        var existingObjects = (await _databaseInstance.query('${recordStructure.ckRecordType}_${field.ckName}', where: '${recordStructure.ckRecordType}ID = ?', whereArgs: [recordJSON[CKConstants.RECORD_NAME_FIELD]]))
+        List objectsToInsert = recordJSON[field.ckName] ?? [];
+        var existingObjects = (await _databaseInstance.query('`${recordStructure.ckRecordType}_${field.ckName}`', where: '`${recordStructure.ckRecordType}ID` = ?', whereArgs: [recordJSON[CKConstants.RECORD_NAME_FIELD]]))
           .map((keyPair) => keyPair[field.ckName]).toList();
 
         objectsToInsert.removeWhere((element) {
@@ -111,8 +114,8 @@ class CKLocalDatabaseManager
         });
 
         var insertBatch = _databaseInstance.batch();
-        (recordJSON[field.ckName] as List).forEach((element) {
-          insertBatch.insert('${recordStructure.ckRecordType}_${field.ckName}', {'${recordStructure.ckRecordType}ID': recordJSON[CKConstants.RECORD_NAME_FIELD], field.ckName: element});
+        objectsToInsert.forEach((element) {
+          insertBatch.insert('`${recordStructure.ckRecordType}_${field.ckName}`', {'`${recordStructure.ckRecordType}ID`': recordJSON[CKConstants.RECORD_NAME_FIELD], field.ckName: element});
         });
         await insertBatch.commit();
 
@@ -130,50 +133,63 @@ class CKLocalDatabaseManager
     await Future.forEach(recordStructure.fields, (CKFieldStructure field) async {
       if (field.type.sqlite.isList)
       {
-        var fieldValuePairs = await queryMapBySQL('SELECT ${field.ckName} FROM ${recordStructure.ckRecordType}_${field.ckName} WHERE ${recordStructure.ckRecordType}ID = ?', args: [rawJSON[CKConstants.RECORD_NAME_FIELD]]);
+        var fieldValuePairs = await queryMapBySQL('SELECT `${field.ckName}` FROM `${recordStructure.ckRecordType}_${field.ckName}` WHERE `${recordStructure.ckRecordType}ID` = ?', args: [rawJSON[CKConstants.RECORD_NAME_FIELD]]);
         rawJSON[field.ckName] = fieldValuePairs.map((fieldValuePair) => fieldValuePair[field.ckName]).toList();
       }
 
-      switch (field.type)
+      if (rawJSON[field.ckName] != null)
       {
-        case CKFieldType.REFERENCE_TYPE:
-          rawJSON[field.ckName] = {
-            CKConstants.RECORD_NAME_FIELD: rawJSON[field.ckName],
-            "database": _cloudDatabase,
-            "zone": _cloudZone
-          };
-          break;
+        switch (field.type)
+        {
+          case CKFieldType.REFERENCE_TYPE:
+            rawJSON[field.ckName] = {
+              CKConstants.RECORD_NAME_FIELD: rawJSON[field.ckName],
+              "database": _cloudDatabase,
+              "zone": _cloudZone
+            };
+            break;
 
-        case CKFieldType.LIST_REFERENCE_TYPE:
-          rawJSON[field.ckName] = (rawJSON[field.ckName] as List).map((referenceID) => {
-            CKConstants.RECORD_NAME_FIELD: referenceID,
-            "database": _cloudDatabase,
-            "zone": _cloudZone
-          }).toList();
-          break;
+          case CKFieldType.LIST_REFERENCE_TYPE:
+            rawJSON[field.ckName] = (rawJSON[field.ckName] as List).map((referenceID) => {
+              CKConstants.RECORD_NAME_FIELD: referenceID,
+              "database": _cloudDatabase,
+              "zone": _cloudZone
+            }).toList();
+            break;
 
-        case CKFieldType.ASSET_TYPE:
-          rawJSON[field.ckName] = jsonDecode(rawJSON[field.ckName]);
-          break;
+          case CKFieldType.ASSET_TYPE:
+            rawJSON[field.ckName] = jsonDecode(rawJSON[field.ckName]);
+            break;
+        }
       }
     });
 
     return rawJSON;
   }
 
-  Future<void> insert<T extends Object>(T localObject, {bool? shouldTrackEvent}) async
+  Future<void> insert<T extends Object>(T localObject, {bool shouldUseReplace = false, bool? shouldTrackEvent}) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
     Map<String,dynamic> simpleJSON = CKRecordParser.localObjectToSimpleJSON<T>(localObject);
     var formattedJSON = await _formatForSQLite<T>(simpleJSON);
 
-    await _databaseInstance.insert(recordStructure.ckRecordType, formattedJSON);
+    if (!shouldUseReplace)
+    {
+      await _databaseInstance.insert(recordStructure.ckRecordType, formattedJSON);
+    }
+    else
+    {
+      var columns = formattedJSON.entries.map((keyValue) => "`${keyValue.key}`").join(",");
+      var values = formattedJSON.entries.map((keyValue) => keyValue.value).toList();
+      var valuesPlaceholderString = values.map((value) => "?").join(",");
+      await _databaseInstance.execute('REPLACE INTO `${recordStructure.ckRecordType}`($columns) VALUES($valuesPlaceholderString)', values);
+    }
 
     shouldTrackEvent ??= true;
     if (shouldTrackEvent)
     {
-      _databaseEventHistory.add(CKDatabaseEvent<T>(
+      databaseEventHistory.add(CKDatabaseEvent<T>(
         this,
         CKDatabaseEventType.insert,
         CKDatabaseEventSource.local,
@@ -190,11 +206,11 @@ class CKLocalDatabaseManager
     });
   }
 
-  Future<List<T>> query<T extends Object>(String where, List whereArgs) async
+  Future<List<T>> query<T extends Object>([String? where, List? whereArgs]) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
-    var queryResults = await queryBySQL<T>('SELECT * FROM ${recordStructure.ckRecordType} WHERE $where', args: whereArgs);
+    var queryResults = await queryBySQL<T>('SELECT * FROM `${recordStructure.ckRecordType}` ${where != null ? "WHERE $where" : ""}', args: whereArgs);
     return queryResults;
   }
 
@@ -202,7 +218,7 @@ class CKLocalDatabaseManager
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
-    var queryResults = await queryBySQL<T>('SELECT * FROM ${recordStructure.ckRecordType} WHERE ${CKConstants.RECORD_NAME_FIELD} = ?', args: [recordID]);
+    var queryResults = await queryBySQL<T>('SELECT * FROM `${recordStructure.ckRecordType}` WHERE ${CKConstants.RECORD_NAME_FIELD} = ?', args: [recordID]);
     return queryResults.firstOrNull;
   }
 
@@ -238,7 +254,7 @@ class CKLocalDatabaseManager
     shouldTrackEvent ??= true;
     if (shouldTrackEvent)
     {
-      _databaseEventHistory.add(CKDatabaseEvent<T>(
+      databaseEventHistory.add(CKDatabaseEvent<T>(
         this,
         CKDatabaseEventType.update,
         CKDatabaseEventSource.local,
@@ -256,13 +272,13 @@ class CKLocalDatabaseManager
 
     await Future.forEach(recordStructure.fields, (CKFieldStructure field) async {
       if (!field.type.sqlite.isList) return;
-      await _databaseInstance.delete('${recordStructure.ckRecordType}_${field.ckName}', where: "${recordStructure.ckRecordType}ID = ?", whereArgs: [localObjectID]);
+      await _databaseInstance.delete('`${recordStructure.ckRecordType}_${field.ckName}`', where: "`${recordStructure.ckRecordType}ID` = ?", whereArgs: [localObjectID]);
     });
 
     shouldTrackEvent ??= true;
     if (shouldTrackEvent)
     {
-      _databaseEventHistory.add(CKDatabaseEvent<T>(
+      databaseEventHistory.add(CKDatabaseEvent<T>(
         this,
         CKDatabaseEventType.delete,
         CKDatabaseEventSource.local,
@@ -284,7 +300,7 @@ class CKDatabaseEvent<T extends Object>
 
   CKDatabaseEvent(this._databaseManager, this._eventType, this._source, this._objectID, [this.localObject]);
 
-  void synchronize() async
+  Future<void> synchronize() async
   {
     switch (_source)
     {
@@ -293,7 +309,7 @@ class CKDatabaseEvent<T extends Object>
         break;
 
       case CKDatabaseEventSource.cloud:
-        await performOnCloudDatabase();
+        await performOnLocalDatabase();
         break;
     }
   }
@@ -329,7 +345,7 @@ class CKDatabaseEvent<T extends Object>
     {
       case CKDatabaseEventType.insert:
         if (localObject == null) return;
-        await _databaseManager.insert<T>(localObject!, shouldTrackEvent: false);
+        await _databaseManager.insert<T>(localObject!, shouldUseReplace: true, shouldTrackEvent: false);
         break;
 
       case CKDatabaseEventType.update:
@@ -359,48 +375,58 @@ enum CKDatabaseEventSource
 
 class CKDatabaseEventList
 {
-  final List<CKDatabaseEvent> l;
-  CKDatabaseEventList() : l = [];
+  final List<CKDatabaseEvent> _l;
+  CKDatabaseEventList() : _l = [];
 
   void add(CKDatabaseEvent element)
   {
-    l.add(element);
+    _l.add(element);
     _cleanEvents();
   }
 
-  void _cleanEvents()
+  Future<void> synchronizeAll() async
   {
-    this.l.forEach((event) {
+    for (var i=0; i < _l.length; i++)
+    {
+      await _l[i].synchronize();
+      _l.removeAt(i);
+      i--;
+    }
+  }
+
+  void _cleanEvents() // TODO: Account for local vs cloud changes
+  {
+    this._l.forEach((event) {
       switch (event._eventType)
       {
         case CKDatabaseEventType.insert:
-          var deleteEvents = this.l.where((testEvent) => testEvent._objectID == event._objectID && testEvent._eventType == CKDatabaseEventType.delete);
+          var deleteEvents = this._l.where((testEvent) => testEvent._objectID == event._objectID && testEvent._eventType == CKDatabaseEventType.delete);
           if (deleteEvents.isNotEmpty)
           {
-            this.l.remove(event);
-            this.l.remove(deleteEvents.first);
+            this._l.remove(event);
+            this._l.remove(deleteEvents.first);
 
-            this.l.removeWhere((testEvent) => testEvent._objectID == testEvent._objectID);
+            this._l.removeWhere((testEvent) => testEvent._objectID == testEvent._objectID);
             return;
           }
 
-          var updateEvents = this.l.where((testEvent) => testEvent._objectID == event._objectID && testEvent._eventType == CKDatabaseEventType.update);
+          var updateEvents = this._l.where((testEvent) => testEvent._objectID == event._objectID && testEvent._eventType == CKDatabaseEventType.update);
           if (updateEvents.isNotEmpty)
           {
             event.localObject = updateEvents.last.localObject;
             updateEvents.forEach((updateEvent) {
-              this.l.remove(updateEvent);
+              this._l.remove(updateEvent);
             });
           }
           break;
 
         case CKDatabaseEventType.update:
-          var updateEvents = this.l.where((testEvent) => testEvent != event && testEvent._objectID == event._objectID && testEvent._eventType == CKDatabaseEventType.update);
+          var updateEvents = this._l.where((testEvent) => testEvent != event && testEvent._objectID == event._objectID && testEvent._eventType == CKDatabaseEventType.update);
           if (updateEvents.isNotEmpty)
           {
             event.localObject = updateEvents.last.localObject;
             updateEvents.forEach((updateEvent) {
-              this.l.remove(updateEvent);
+              this._l.remove(updateEvent);
             });
           }
           break;
