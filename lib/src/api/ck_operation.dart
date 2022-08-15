@@ -139,13 +139,12 @@ class CKRecordQueryOperation<T> extends CKPostOperation
     {
       var recordsList = _handleResponse(apiCallback.response);
 
-      await Future.forEach(recordsList, (recordMap) async {
+      for (var recordMap in recordsList)
+      {
         var newObject = CKRecordParser.recordToLocalObject<T>(recordMap as Map<String,dynamic>, _database);
-
         if (_shouldPreloadAssets) await CKRecordParser.preloadAssets<T>(newObject);
-
         newLocalObjects.add(newObject);
-      });
+      }
     }
 
     return CKOperationCallback<List<T>>(apiCallback.state, response: newLocalObjects);

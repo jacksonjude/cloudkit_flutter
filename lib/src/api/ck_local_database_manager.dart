@@ -7,7 +7,6 @@ import 'package:tuple/tuple.dart';
 
 import '../parsing/ck_record_parser.dart';
 import '../parsing/ck_record_structure.dart';
-import '../parsing/ck_field_structure.dart';
 import '../parsing/types/ck_field_type.dart';
 import '../ck_constants.dart';
 import 'request_models/ck_zone.dart';
@@ -68,9 +67,10 @@ class CKLocalDatabaseManager
           var listFields = recordStructure.fields.where((fieldStructure) {
             return fieldStructure.type.sqlite.isList;
           });
-          await Future.forEach(listFields, (CKFieldStructure fieldStructure) async {
+          for (var fieldStructure in listFields)
+          {
             await db.execute('CREATE TABLE `${recordStructure.ckRecordType}_${fieldStructure.ckName}` (`${recordStructure.ckRecordType}ID` TEXT, `${fieldStructure.ckName}` ${fieldStructure.type.sqlite.baseType})');
-          });
+          }
         }
       }
     );
@@ -80,7 +80,8 @@ class CKLocalDatabaseManager
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
-    await Future.forEach(recordStructure.fields, (CKFieldStructure field) async {
+    for (var field in recordStructure.fields)
+    {
       if (recordJSON[field.ckName] != null)
       {
         switch (field.type)
@@ -103,7 +104,7 @@ class CKLocalDatabaseManager
       {
         List objectsToInsert = recordJSON[field.ckName] ?? [];
         var existingObjects = (await _databaseInstance.query('`${recordStructure.ckRecordType}_${field.ckName}`', where: '`${recordStructure.ckRecordType}ID` = ?', whereArgs: [recordJSON[CKConstants.RECORD_NAME_FIELD]]))
-          .map((keyPair) => keyPair[field.ckName]).toList();
+            .map((keyPair) => keyPair[field.ckName]).toList();
 
         objectsToInsert.removeWhere((element) {
           var existingIndex = existingObjects.indexOf(element);
@@ -121,7 +122,7 @@ class CKLocalDatabaseManager
 
         recordJSON.remove(field.ckName);
       }
-    });
+    }
 
     return recordJSON;
   }
@@ -130,7 +131,8 @@ class CKLocalDatabaseManager
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
-    await Future.forEach(recordStructure.fields, (CKFieldStructure field) async {
+    for (var field in recordStructure.fields)
+    {
       if (field.type.sqlite.isList)
       {
         var fieldValuePairs = await queryMapBySQL('SELECT `${field.ckName}` FROM `${recordStructure.ckRecordType}_${field.ckName}` WHERE `${recordStructure.ckRecordType}ID` = ?', args: [rawJSON[CKConstants.RECORD_NAME_FIELD]]);
@@ -162,7 +164,7 @@ class CKLocalDatabaseManager
             break;
         }
       }
-    });
+    }
 
     return rawJSON;
   }
@@ -201,9 +203,10 @@ class CKLocalDatabaseManager
 
   Future<void> insertAll<T extends Object>(List<T> localObjects, {bool? shouldTrackEvents}) async
   {
-    await Future.forEach(localObjects, (T localObject) async {
+    for (var localObject in localObjects)
+    {
       await insert<T>(localObject, shouldTrackEvent: shouldTrackEvents);
-    });
+    }
   }
 
   Future<List<T>> query<T extends Object>([String? where, List? whereArgs]) async
@@ -227,11 +230,12 @@ class CKLocalDatabaseManager
     var queryResults = await queryMapBySQL(sql, args: args);
 
     List<T> localObjects = [];
-    await Future.forEach(queryResults, (Map<String,dynamic> rawJSON) async {
+    for (var rawJSON in queryResults)
+    {
       var decodedJSON = await _decodeFromSQLite<T>(rawJSON);
       T localObject = CKRecordParser.simpleJSONToLocalObject<T>(decodedJSON, this._cloudDatabase);
       localObjects.add(localObject);
-    });
+    }
 
     return localObjects;
   }
@@ -270,10 +274,11 @@ class CKLocalDatabaseManager
 
     await _databaseInstance.delete(recordStructure.ckRecordType, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [localObjectID]);
 
-    await Future.forEach(recordStructure.fields, (CKFieldStructure field) async {
-      if (!field.type.sqlite.isList) return;
+    for (var field in recordStructure.fields)
+    {
+      if (!field.type.sqlite.isList) continue;
       await _databaseInstance.delete('`${recordStructure.ckRecordType}_${field.ckName}`', where: "`${recordStructure.ckRecordType}ID` = ?", whereArgs: [localObjectID]);
-    });
+    }
 
     shouldTrackEvent ??= true;
     if (shouldTrackEvent)

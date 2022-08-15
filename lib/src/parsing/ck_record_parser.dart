@@ -185,15 +185,16 @@ class CKRecordParser
     var instanceMirror = reflector.reflect(localObject!);
     var recordStructure = getRecordStructureFromLocalType(T);
 
-    await Future.forEach(recordStructure.fields, (field) async {
-      if ((field as CKFieldStructure).type == CKFieldType.ASSET_TYPE)
+    for (var field in recordStructure.fields)
+    {
+      if (field.type == CKFieldType.ASSET_TYPE)
       {
         var assetObject = instanceMirror.invokeGetter(field.localName);
-        if (assetObject == null) return;
+        if (assetObject == null) continue;
 
         await (assetObject as CKAsset).fetchAsset();
       }
-    });
+    }
   }
 
   /// Convert a local model object to a CloudKit record JSON object.
