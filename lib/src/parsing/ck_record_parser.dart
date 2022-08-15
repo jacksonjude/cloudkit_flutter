@@ -29,13 +29,14 @@ class CKRecordParser
       ClassMirror currentClassMirror = reflector.reflectType(currentType) as ClassMirror;
 
       var ckRecordType = currentType.toString(); // default to local name if none is provided in a CKRecordTypeAnnotation
+      CKRecordTypeAnnotation? recordTypeAnnotation;
       if (_isTypeInArray<CKRecordTypeAnnotation>(currentClassMirror.metadata)) // if a CKRecordTypeAnnotation is found above the class declaration ...
       {
-        var typeAnnotation = _getTypeFromArray<CKRecordTypeAnnotation>(currentClassMirror.metadata);
-        ckRecordType = typeAnnotation.type; // ... set the ckRecordType to the name in the annotation
+        recordTypeAnnotation = _getTypeFromArray<CKRecordTypeAnnotation>(currentClassMirror.metadata);
+        ckRecordType = recordTypeAnnotation.type; // ... set the ckRecordType to the name in the annotation
       }
 
-      var recordStructure = CKRecordStructure(currentType, ckRecordType, currentClassMirror); // create a CKRecordData object to track local and ck field names and types
+      var recordStructure = CKRecordStructure(currentType, ckRecordType, currentClassMirror, recordTypeAnnotation); // create a CKRecordData object to track local and ck field names and types
 
       currentClassMirror.declarations.values.forEach((field) // iterate through member functions, variables, etc
       {
@@ -285,6 +286,14 @@ class CKRecordParser
   static CKRecordStructure getRecordStructureFromRecordType(String ckRecordType)
   {
     return _getRecordStructure(ckRecordType: ckRecordType);
+  }
+
+  static String getIDFromLocalObject(Object localObject, CKRecordStructure recordStructure)
+  {
+    var idField = recordStructure.fields.firstWhere((field) => field.ckName == CKConstants.RECORD_NAME_FIELD);
+    var instanceMirror = reflector.reflect(localObject);
+    var objectID = instanceMirror.invokeGetter(idField.localName) as String;
+    return objectID;
   }
 
   static Map<String,dynamic> _recordToSimpleJSON(Map<String,dynamic> recordData)
