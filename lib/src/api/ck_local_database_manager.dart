@@ -1,8 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:collection/collection.dart';
+import 'package:sqlbrite/sqlbrite.dart';
 import 'package:tuple/tuple.dart';
 
 import '../parsing/ck_record_parser.dart';
@@ -22,7 +21,8 @@ class CKLocalDatabaseManager
   final _databaseVersion;
   late final CKDatabase _cloudDatabase;
   late final CKZone _cloudZone;
-  late final Database _databaseInstance;
+  // late final Database _databaseInstance;
+  late final BriteDatabase _databaseInstance;
 
   CKLocalDatabaseManager(this._databaseName, this._databaseVersion) : databaseEventHistory = CKDatabaseEventList();
 
@@ -48,7 +48,7 @@ class CKLocalDatabaseManager
 
     deleteDatabase(managerToInit._databaseName); // TODO: REMOVE THIS AFTER TESTING
 
-    managerToInit._databaseInstance = await openDatabase(
+    var databaseInstance = await openDatabase(
       managerToInit._databaseName,
       version: managerToInit._databaseVersion,
       onCreate: (Database db, int version) async {
@@ -74,6 +74,8 @@ class CKLocalDatabaseManager
         }
       }
     );
+
+    managerToInit._databaseInstance = BriteDatabase(databaseInstance);
   }
 
   Future<Map<String, dynamic>> _formatForSQLite<T>(Map<String, dynamic> recordJSON) async
@@ -129,6 +131,7 @@ class CKLocalDatabaseManager
 
   Future<Map<String, dynamic>> _decodeFromSQLite<T>(Map<String, dynamic> rawJSON) async
   {
+    rawJSON = Map.of(rawJSON);
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
     for (var field in recordStructure.fields)
@@ -169,6 +172,84 @@ class CKLocalDatabaseManager
     return rawJSON;
   }
 
+  Stream<List<T>> createQuery<T extends Object>([String? where, List? whereArgs])
+  {
+    var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
+
+    return _databaseInstance.createQuery(recordStructure.ckRecordType, where: where, whereArgs: whereArgs)
+        .asyncMapToList<T>(_convertFromSQLiteMap);
+  }
+
+  Stream<T> createQueryByID<T extends Object>(String recordID)
+  {
+    var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
+
+    return _databaseInstance.createQuery(recordStructure.ckRecordType, where: '${CKConstants.RECORD_NAME_FIELD} = ?', whereArgs: [recordID])
+        .asyncMapToOne<T>(_convertFromSQLiteMap);
+  }
+
+  Stream<List<T>> createQueryBySQL<T extends Object>(List<String> tables, String sql, [List? args])
+  {
+    return _databaseInstance.createRawQuery(tables, sql, args)
+        .asyncMapToList<T>(_convertFromSQLiteMap);
+  }
+
+  Stream<T> createSingularQueryBySQL<T extends Object>(List<String> tables, String sql, [List? args])
+  {
+    return _databaseInstance.createRawQuery(tables, sql, args)
+        .asyncMapToOne<T>(_convertFromSQLiteMap);
+  }
+
+  Future<T?> queryByID<T extends Object>(String recordID) async
+  {
+    var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
+
+    var queryResults = await _databaseInstance.query(recordStructure.ckRecordType, where: '${CKConstants.RECORD_NAME_FIELD} = ?', whereArgs: [recordID]);
+    if (queryResults.length == 0) return null;
+
+    return _convertFromSQLiteMap<T>(queryResults[0]);
+  }
+
+  Future<List<Map<String,dynamic>>> queryMapBySQL(String sql, {List? args, bool copyObjects = true}) async
+  {
+    var queryResults = await _databaseInstance.rawQuery(sql, args);
+    return !copyObjects ? queryResults : queryResults.map((object) => Map.of(object)).toList();
+  }
+
+  Future<T> _convertFromSQLiteMap<T>(Map<String,dynamic> rawJSON) async
+  {
+    var decodedJSON = await _decodeFromSQLite<T>(rawJSON);
+    T localObject = CKRecordParser.simpleJSONToLocalObject<T>(decodedJSON, this._cloudDatabase);
+    return localObject;
+  }
+
+  static Stream<V> streamField<U extends Object, V extends Object>(U parentObject, String referenceFieldName, {CKLocalDatabaseManager? manager})
+  {
+    var childRecordStructure = CKRecordParser.getRecordStructureFromLocalType(V);
+    var parentRecordStructure = CKRecordParser.getRecordStructureFromLocalType(U);
+
+    var parentObjectID = CKRecordParser.getIDFromLocalObject(parentObject, parentRecordStructure);
+
+    var managerToUse = manager ?? CKLocalDatabaseManager.shared;
+    return managerToUse.createSingularQueryBySQL<V>([childRecordStructure.ckRecordType, parentRecordStructure.ckRecordType],
+        "SELECT * FROM `${childRecordStructure.ckRecordType}` WHERE ${CKConstants.RECORD_NAME_FIELD} = (SELECT $referenceFieldName from `${parentRecordStructure.ckRecordType}` WHERE `${CKConstants.RECORD_NAME_FIELD}` = ?)",
+        [parentObjectID]);
+  }
+
+  static Stream<List<V>> streamListField<U extends Object, V extends Object>(U parentObject, String referenceListFieldName, {String? where, List? whereArgs, String? orderBy, CKLocalDatabaseManager? manager})
+  {
+    var childRecordStructure = CKRecordParser.getRecordStructureFromLocalType(V);
+    var parentRecordStructure = CKRecordParser.getRecordStructureFromLocalType(U);
+
+    var joinTableName = '${parentRecordStructure.ckRecordType}_$referenceListFieldName';
+    var parentObjectID = CKRecordParser.getIDFromLocalObject(parentObject, parentRecordStructure);
+
+    var managerToUse = manager ?? CKLocalDatabaseManager.shared;
+    return managerToUse.createQueryBySQL<V>([childRecordStructure.ckRecordType, joinTableName],
+        "SELECT * FROM `${childRecordStructure.ckRecordType}` WHERE ${CKConstants.RECORD_NAME_FIELD} IN (SELECT `$referenceListFieldName` from `$joinTableName` WHERE `${parentRecordStructure.ckRecordType}ID` = ?)${where != null ? " AND ($where)" : ""}${orderBy != null ? " ORDER BY $orderBy" : ""}",
+        [parentObjectID, ...?whereArgs]);
+  }
+
   Future<void> insert<T extends Object>(T localObject, {bool shouldUseReplace = false, bool? shouldTrackEvent}) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
@@ -185,7 +266,7 @@ class CKLocalDatabaseManager
       var columns = formattedJSON.entries.map((keyValue) => "`${keyValue.key}`").join(",");
       var values = formattedJSON.entries.map((keyValue) => keyValue.value).toList();
       var valuesPlaceholderString = values.map((value) => "?").join(",");
-      await _databaseInstance.execute('REPLACE INTO `${recordStructure.ckRecordType}`($columns) VALUES($valuesPlaceholderString)', values);
+      await _databaseInstance.executeAndTrigger([recordStructure.ckRecordType], 'REPLACE INTO `${recordStructure.ckRecordType}`($columns) VALUES($valuesPlaceholderString)', values);
     }
 
     shouldTrackEvent ??= true;
@@ -207,43 +288,6 @@ class CKLocalDatabaseManager
     {
       await insert<T>(localObject, shouldTrackEvent: shouldTrackEvents);
     }
-  }
-
-  Future<List<T>> query<T extends Object>([String? where, List? whereArgs]) async
-  {
-    var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
-
-    var queryResults = await queryBySQL<T>('SELECT * FROM `${recordStructure.ckRecordType}` ${where != null ? "WHERE $where" : ""}', args: whereArgs);
-    return queryResults;
-  }
-
-  Future<T?> queryByID<T extends Object>(String recordID) async
-  {
-    var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
-
-    var queryResults = await queryBySQL<T>('SELECT * FROM `${recordStructure.ckRecordType}` WHERE ${CKConstants.RECORD_NAME_FIELD} = ?', args: [recordID]);
-    return queryResults.firstOrNull;
-  }
-
-  Future<List<T>> queryBySQL<T extends Object>(String sql, {List? args}) async
-  {
-    var queryResults = await queryMapBySQL(sql, args: args);
-
-    List<T> localObjects = [];
-    for (var rawJSON in queryResults)
-    {
-      var decodedJSON = await _decodeFromSQLite<T>(rawJSON);
-      T localObject = CKRecordParser.simpleJSONToLocalObject<T>(decodedJSON, this._cloudDatabase);
-      localObjects.add(localObject);
-    }
-
-    return localObjects;
-  }
-
-  Future<List<Map<String,dynamic>>> queryMapBySQL(String sql, {List? args, bool copyObjects = true}) async
-  {
-    var queryResults = await _databaseInstance.rawQuery(sql, args);
-    return !copyObjects ? queryResults : queryResults.map((object) => Map.of(object)).toList();
   }
 
   Future<void> update<T extends Object>(T updatedLocalObject, {bool? shouldTrackEvent}) async
@@ -382,6 +426,7 @@ class CKDatabaseEventList
 {
   final List<CKDatabaseEvent> _l;
   CKDatabaseEventList() : _l = [];
+  bool isSyncing = false;
 
   void add(CKDatabaseEvent element)
   {
@@ -391,12 +436,16 @@ class CKDatabaseEventList
 
   Future<void> synchronizeAll() async
   {
+    if (isSyncing) return;
+
+    isSyncing = true;
     for (var i=0; i < _l.length; i++)
     {
       await _l[i].synchronize();
       _l.removeAt(i);
       i--;
     }
+    isSyncing = false;
   }
 
   void _cleanEvents() // TODO: Account for local vs cloud changes

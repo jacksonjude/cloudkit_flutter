@@ -52,6 +52,13 @@ class CKReference<T extends Object>
     return localObjects;
   }
 
+  /// Get a stream for the referenced object from SQLite
+  Stream<T> stream({CKLocalDatabaseManager? manager})
+  {
+    var managerToUse = manager ?? CKLocalDatabaseManager.shared;
+    return managerToUse.createQueryByID<T>(referenceUUID);
+  }
+
   /// Get the cached object
   T? get cache => _cachedObject;
 

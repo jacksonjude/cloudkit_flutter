@@ -18,6 +18,7 @@ dependencies:
   build_runner: ^2.1.11
   shared_preferences: ^2.0.15
   sqflite: ^2.0.3
+  sqlbrite: ^2.3.0
   tuple: ^2.0.0
   quiver: ^3.1.0
 
