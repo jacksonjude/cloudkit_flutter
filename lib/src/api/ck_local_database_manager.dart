@@ -223,20 +223,29 @@ class CKLocalDatabaseManager
     return localObject;
   }
 
-  static Stream<V> streamField<U extends Object, V extends Object>(U parentObject, String referenceFieldName, {CKLocalDatabaseManager? manager})
+  Stream<T> streamObject<T extends Object>(T object)
+  {
+    var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
+    var objectID = CKRecordParser.getIDFromLocalObject(object, recordStructure);
+
+    return createSingularQueryBySQL<T>([recordStructure.ckRecordType],
+        "SELECT * FROM `${recordStructure.ckRecordType}` WHERE ${CKConstants.RECORD_NAME_FIELD} = ?",
+        [objectID]);
+  }
+
+  Stream<V> streamField<U extends Object, V extends Object>(U parentObject, String referenceFieldName)
   {
     var childRecordStructure = CKRecordParser.getRecordStructureFromLocalType(V);
     var parentRecordStructure = CKRecordParser.getRecordStructureFromLocalType(U);
 
     var parentObjectID = CKRecordParser.getIDFromLocalObject(parentObject, parentRecordStructure);
 
-    var managerToUse = manager ?? CKLocalDatabaseManager.shared;
-    return managerToUse.createSingularQueryBySQL<V>([childRecordStructure.ckRecordType, parentRecordStructure.ckRecordType],
+    return createSingularQueryBySQL<V>([childRecordStructure.ckRecordType, parentRecordStructure.ckRecordType],
         "SELECT * FROM `${childRecordStructure.ckRecordType}` WHERE ${CKConstants.RECORD_NAME_FIELD} = (SELECT $referenceFieldName from `${parentRecordStructure.ckRecordType}` WHERE `${CKConstants.RECORD_NAME_FIELD}` = ?)",
         [parentObjectID]);
   }
 
-  static Stream<List<V>> streamListField<U extends Object, V extends Object>(U parentObject, String referenceListFieldName, {String? where, List? whereArgs, String? orderBy, CKLocalDatabaseManager? manager})
+  Stream<List<V>> streamListField<U extends Object, V extends Object>(U parentObject, String referenceListFieldName, {String? where, List? whereArgs, String? orderBy})
   {
     var childRecordStructure = CKRecordParser.getRecordStructureFromLocalType(V);
     var parentRecordStructure = CKRecordParser.getRecordStructureFromLocalType(U);
@@ -244,8 +253,7 @@ class CKLocalDatabaseManager
     var joinTableName = '${parentRecordStructure.ckRecordType}_$referenceListFieldName';
     var parentObjectID = CKRecordParser.getIDFromLocalObject(parentObject, parentRecordStructure);
 
-    var managerToUse = manager ?? CKLocalDatabaseManager.shared;
-    return managerToUse.createQueryBySQL<V>([childRecordStructure.ckRecordType, joinTableName],
+    return createQueryBySQL<V>([childRecordStructure.ckRecordType, joinTableName],
         "SELECT * FROM `${childRecordStructure.ckRecordType}` WHERE ${CKConstants.RECORD_NAME_FIELD} IN (SELECT `$referenceListFieldName` from `$joinTableName` WHERE `${parentRecordStructure.ckRecordType}ID` = ?)${where != null ? " AND ($where)" : ""}${orderBy != null ? " ORDER BY $orderBy" : ""}",
         [parentObjectID, ...?whereArgs]);
   }
