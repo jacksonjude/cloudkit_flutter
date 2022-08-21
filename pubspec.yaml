@@ -13,11 +13,11 @@ dependencies:
     sdk: flutter
 
   webview_flutter: ^3.0.4
-  http: ^0.13.4
+  http: ^0.13.5
   reflectable: 3.0.8
-  build_runner: ^2.1.11
+  build_runner: ^2.2.0
   shared_preferences: ^2.0.15
-  sqflite: ^2.0.3
+  sqflite: ^2.0.3+1
   sqlbrite: ^2.3.0
   tuple: ^2.0.0
   quiver: ^3.1.0
