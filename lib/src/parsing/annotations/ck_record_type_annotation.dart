@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 import '../../api/request_models/ck_record_zone_changes_request.dart';
 import '../../api/request_models/ck_sync_token.dart';
 import '../../api/request_models/ck_zone.dart';
@@ -22,8 +20,8 @@ class CKRecordTypeAnnotation<T extends Object>
     return CKDatabaseEvent<T>(managerToUse, type, CKDatabaseEventSource.cloud, localObjectID, localObject);
   }
 
-  CKRecordZoneChangesOperation<T> createRecordZoneChangesOperation(CKZone zone, CKDatabase database, {CKRecordZoneChangesRequest? zoneChangesRequest, CKSyncToken? syncToken, int? resultsLimit, List<String>? recordFields, bool? preloadAssets, CKAPIManager? apiManager, BuildContext? context})
+  CKRecordZoneChangesOperation<T> createRecordZoneChangesOperation(CKZone zone, CKDatabase database, {CKRecordZoneChangesRequest? zoneChangesRequest, CKSyncToken? syncToken, int? resultsLimit, List<String>? recordFields, bool? preloadAssets, CKAPIManager? apiManager})
   {
-    return CKRecordZoneChangesOperation<T>(zone, database, zoneChangesRequest: zoneChangesRequest, syncToken: syncToken, resultsLimit: resultsLimit, recordFields: recordFields, preloadAssets: preloadAssets, apiManager: apiManager, context: context);
+    return CKRecordZoneChangesOperation<T>(zone, database, zoneChangesRequest: zoneChangesRequest, syncToken: syncToken, resultsLimit: resultsLimit, recordFields: recordFields, preloadAssets: preloadAssets, apiManager: apiManager);
   }
 }

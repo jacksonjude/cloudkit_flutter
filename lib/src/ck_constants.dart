@@ -3,7 +3,6 @@ class CKConstants
 {
   static const API_ENDPOINT = "https://api.apple-cloudkit.com";
   static const API_VERSION = "1";
-  static const API_URL_BASE = "$API_ENDPOINT/database/$API_VERSION";
 
   static const API_TOKEN_PARAMETER = "ckAPIToken";
   static const WEB_AUTH_TOKEN_PARAMETER = "ckWebAuthToken";
@@ -37,22 +36,35 @@ class CKConstants
   }
 }
 
+class StringConstant
+{
+  final String _value;
+
+  const StringConstant(this._value);
+
+  @override
+  String toString() => _value;
+}
+
+class CKAPIModule extends StringConstant
+{
+  static const DATABASE = CKAPIModule("database");
+  static const DEVICE = CKAPIModule("device");
+
+  const CKAPIModule(String module) : super(module);
+}
+
 /// A container class to denote the CloudKit environment as a string.
-class CKEnvironment
+class CKEnvironment extends StringConstant
 {
   static const PRODUCTION_ENVIRONMENT = CKEnvironment("production");
   static const DEVELOPMENT_ENVIRONMENT = CKEnvironment("development");
 
-  final String _environment;
-
-  const CKEnvironment(this._environment);
-
-  @override
-  String toString() => _environment;
+  const CKEnvironment(String environment) : super(environment);
 }
 
 /// A container class to denote the CloudKit database as a string.
-class CKDatabase
+class CKDatabase extends StringConstant
 {
   static const PUBLIC_DATABASE = CKDatabase("public");
   static const SHARED_DATABASE = CKDatabase("shared");
@@ -60,10 +72,5 @@ class CKDatabase
 
   static const databases = [PUBLIC_DATABASE, SHARED_DATABASE, PRIVATE_DATABASE];
 
-  final String _database;
-
-  const CKDatabase(this._database);
-
-  @override
-  String toString() => _database;
+  const CKDatabase(String database) : super(database);
 }

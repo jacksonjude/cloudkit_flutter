@@ -1,5 +1,6 @@
 export 'src/ck_constants.dart';
 
+export 'src/api/ck_api_manager.dart';
 export 'src/api/ck_operation.dart';
 export 'src/api/request_models/ck_record_query_request.dart';
 export 'src/api/request_models/ck_record_zone_changes_request.dart';

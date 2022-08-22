@@ -39,13 +39,7 @@ void main() async
 //
 // Once the container is created, enter the CloudKit container and API token (set up via the CloudKit dashboard & with the options specified in README.md) in an environment.json file:
 
-Future<dynamic> fetchJSON(String jsonPath) async
-{
-  WidgetsFlutterBinding.ensureInitialized();
-  String jsonString = await rootBundle.loadString(jsonPath);
-  Map<String,dynamic> jsonData = jsonDecode(jsonString);
-  return jsonData;
-}
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> initializeCloudKit() async
 {
@@ -62,8 +56,16 @@ Future<void> initializeCloudKit() async
     Department
   ]);
 
-  await CKAPIManager.initManager(ckContainer, ckAPIToken, ckEnvironment);
+  await CKAPIManager.initManager(ckContainer, ckAPIToken, ckEnvironment, navigatorKey: navigatorKey);
   CKLocalDatabaseManager.initializeDatabase(recordStructures);
+}
+
+Future<dynamic> fetchJSON(String jsonPath) async
+{
+  WidgetsFlutterBinding.ensureInitialized();
+  String jsonString = await rootBundle.loadString(jsonPath);
+  Map<String,dynamic> jsonData = jsonDecode(jsonString);
+  return jsonData;
 }
 
 class CKTestApp extends StatelessWidget
@@ -78,6 +80,7 @@ class CKTestApp extends StatelessWidget
         primarySwatch: Colors.blue,
       ),
       home: CKTestPage(title: "iCloud Test"),
+      navigatorKey: navigatorKey,
     );
   }
 }
@@ -186,7 +189,7 @@ class CKSignInButtonState extends State<CKSignInButton>
             widget.callback(CKSignInState.SIGNING_IN, "Signing in...");
           }
 
-          var getCurrentUserOperation = CKCurrentUserOperation(CKDatabase.PUBLIC_DATABASE, context: context);
+          var getCurrentUserOperation = CKCurrentUserOperation(CKDatabase.PUBLIC_DATABASE);
           var operationCallback = await getCurrentUserOperation.execute();
 
           switch (operationCallback.state)
@@ -242,7 +245,7 @@ class FetchEmployeeTestButtonState extends State<FetchEmployeeTestButton>
             return;
           }
 
-          var queryOperation = CKRecordQueryOperation<Employee>(CKDatabase.PRIVATE_DATABASE, zoneID: CKZone("testZone"), preloadAssets: true, context: context);
+          var queryOperation = CKRecordQueryOperation<Employee>(CKDatabase.PRIVATE_DATABASE, zoneID: CKZone("testZone"), preloadAssets: true);
           CKOperationCallback<List<Employee>> queryCallback = await queryOperation.execute();
 
           List<Employee> employees = [];

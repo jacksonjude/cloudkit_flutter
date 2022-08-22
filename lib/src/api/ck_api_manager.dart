@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../ck_constants.dart';
+import '/src/ck_constants.dart';
 import 'ck_auth_web_view.dart';
 import 'ck_operation.dart';
 
@@ -15,6 +15,7 @@ class CKAPIManager
   late final String _ckAPIToken;
   late final CKEnvironment _environment;
   late final String _redirectURLPattern;
+  late final GlobalKey<NavigatorState>? _navigatorKey;
 
   String? _ckAuthURL;
   String? _ckWebAuthToken;
@@ -29,7 +30,7 @@ class CKAPIManager
   }
 
   /// Initialize the shared API manager for the application. Optionally, a custom [CKAPIManager] can be passed in.
-  static Future<void> initManager(String ckContainer, String ckAPIToken, CKEnvironment environment, {CKAPIManager? manager, bool shouldFetchWebAuthToken = true}) async
+  static Future<void> initManager(String ckContainer, String ckAPIToken, CKEnvironment environment, {GlobalKey<NavigatorState>? navigatorKey, CKAPIManager? manager, bool shouldFetchWebAuthToken = true}) async
   {
     var managerToInit = manager ?? CKAPIManager.shared;
 
@@ -37,6 +38,7 @@ class CKAPIManager
     managerToInit._ckAPIToken = ckAPIToken;
     managerToInit._environment = environment;
     managerToInit._redirectURLPattern = CKConstants.REDIRECT_URL_PATTERN_PREFIX + ckContainer.toLowerCase();
+    managerToInit._navigatorKey = navigatorKey;
 
     if (shouldFetchWebAuthToken)
     {
@@ -45,7 +47,7 @@ class CKAPIManager
   }
 
   /// Call the CloudKit API directly, given the database, api operation path, protocol (GET or POST), and optionally, the JSON body and [BuildContext].
-  Future<CKOperationCallback> callAPI(CKDatabase database, String operationPath, CKOperationProtocol operationProtocol, {Map<String,dynamic>? operationBody, BuildContext? context}) async
+  Future<CKOperationCallback> callAPI(CKAPIModule apiModule, String operationPath, CKOperationProtocol operationProtocol, {CKDatabase? database, Map<String,dynamic>? operationBody}) async
   {
     if (this._ckAuthURL == null || this._ckWebAuthToken != null)
     {
@@ -56,7 +58,7 @@ class CKAPIManager
         uriQueryParameters[CKConstants.WEB_AUTH_TOKEN_PARAMETER] = this._ckWebAuthToken!;
       }
 
-      var originalURI = Uri.parse(CKConstants.API_URL_BASE + "/" + this._ckContainer + "/" + this._environment.toString() + "/" + database.toString() + "/" + operationPath);
+      var originalURI = Uri.parse(CKConstants.API_ENDPOINT + "/" + apiModule.toString() + "/" + CKConstants.API_VERSION + "/" + this._ckContainer + "/" + this._environment.toString() + "/" + (database != null ? database.toString() + "/" : "") + operationPath);
       var modifiedURIWithParameters = Uri.https(originalURI.authority, originalURI.path, uriQueryParameters);
 
       http.Response response;
@@ -93,11 +95,11 @@ class CKAPIManager
       }
     }
 
-    var authState = await authenticateUser(context);
+    var authState = await authenticateUser();
     switch (authState)
     {
       case CKAuthState.success:
-        return await callAPI(database, operationPath, operationProtocol, operationBody: operationBody, context: context);
+        return await callAPI(apiModule, operationPath, operationProtocol, database: database, operationBody: operationBody);
       case CKAuthState.failure:
       case CKAuthState.cancel:
         return CKOperationCallback(CKOperationState.authFailure);
@@ -105,11 +107,11 @@ class CKAPIManager
   }
 
   /// Open the "Sign-In to iCloud" webpage, if the stored ckAuthURL exists.
-  Future<CKAuthState> authenticateUser(BuildContext? context) async
+  Future<CKAuthState> authenticateUser() async
   {
-    if (context == null || _ckAuthURL == null) return CKAuthState.failure;
+    if (_navigatorKey == null || _navigatorKey!.currentState == null || _ckAuthURL == null) return CKAuthState.failure;
 
-    final CKAuthCallback authCallback = await Navigator.push(context,
+    final CKAuthCallback authCallback = await _navigatorKey!.currentState!.push(
       MaterialPageRoute(builder: (context) =>
         CKAuthWebView(
           authenticationURL: _ckAuthURL!,
