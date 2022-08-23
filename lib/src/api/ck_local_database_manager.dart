@@ -17,6 +17,8 @@ class CKLocalDatabaseManager
   static const _defaultDatabaseName = "cloudkit_flutter_sync.db";
   static const _defaultVersionNumber = 1;
 
+  static const _uuidToTypeTableName = "_UUID_Type";
+
   final _databaseName;
   final _databaseVersion;
   late final CKDatabase _cloudDatabase;
@@ -72,6 +74,8 @@ class CKLocalDatabaseManager
             await db.execute('CREATE TABLE `${recordStructure.ckRecordType}_${fieldStructure.ckName}` (`${recordStructure.ckRecordType}ID` TEXT, `${fieldStructure.ckName}` ${fieldStructure.type.sqlite.baseType})');
           }
         }
+
+        await db.execute('CREATE TABLE `$_uuidToTypeTableName` (uuid TEXT, type TEXT)');
       }
     );
 
@@ -258,39 +262,43 @@ class CKLocalDatabaseManager
         [parentObjectID, ...?whereArgs]);
   }
 
-  Future<void> insert<T extends Object>(T localObject, {bool shouldUseReplace = false, bool? shouldTrackEvent}) async
+  Future<void> insert<T extends Object>(T localObject, {bool shouldUseReplace = false, bool shouldTrackEvent = true}) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
     Map<String,dynamic> simpleJSON = CKRecordParser.localObjectToSimpleJSON<T>(localObject);
     var formattedJSON = await _formatForSQLite<T>(simpleJSON);
 
+    var objectID = simpleJSON[CKConstants.RECORD_NAME_FIELD];
+    var tableName = recordStructure.ckRecordType;
+
     if (!shouldUseReplace)
     {
-      await _databaseInstance.insert(recordStructure.ckRecordType, formattedJSON);
+      await _databaseInstance.insert(tableName, formattedJSON);
     }
     else
     {
       var columns = formattedJSON.entries.map((keyValue) => "`${keyValue.key}`").join(",");
       var values = formattedJSON.entries.map((keyValue) => keyValue.value).toList();
       var valuesPlaceholderString = values.map((value) => "?").join(",");
-      await _databaseInstance.executeAndTrigger([recordStructure.ckRecordType], 'REPLACE INTO `${recordStructure.ckRecordType}`($columns) VALUES($valuesPlaceholderString)', values);
+      await _databaseInstance.executeAndTrigger([tableName], 'REPLACE INTO `$tableName`($columns) VALUES($valuesPlaceholderString)', values);
     }
 
-    shouldTrackEvent ??= true;
+    _databaseInstance.execute('REPLACE INTO `$_uuidToTypeTableName` (uuid, type) VALUES(?, ?)', [objectID, tableName]);
+
     if (shouldTrackEvent)
     {
       databaseEventHistory.add(CKDatabaseEvent<T>(
         this,
         CKDatabaseEventType.insert,
         CKDatabaseEventSource.local,
-        simpleJSON[CKConstants.RECORD_NAME_FIELD],
+        objectID,
         localObject
       ));
     }
   }
 
-  Future<void> insertAll<T extends Object>(List<T> localObjects, {bool? shouldTrackEvents}) async
+  Future<void> insertAll<T extends Object>(List<T> localObjects, {bool shouldTrackEvents = true}) async
   {
     for (var localObject in localObjects)
     {
@@ -298,7 +306,7 @@ class CKLocalDatabaseManager
     }
   }
 
-  Future<void> update<T extends Object>(T updatedLocalObject, {bool? shouldTrackEvent}) async
+  Future<void> update<T extends Object>(T updatedLocalObject, {bool shouldTrackEvent = true}) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
@@ -307,7 +315,6 @@ class CKLocalDatabaseManager
 
     await _databaseInstance.update(recordStructure.ckRecordType, formattedJSON);
 
-    shouldTrackEvent ??= true;
     if (shouldTrackEvent)
     {
       databaseEventHistory.add(CKDatabaseEvent<T>(
@@ -320,11 +327,24 @@ class CKLocalDatabaseManager
     }
   }
 
-  Future<void> delete<T extends Object>(String localObjectID, {T? localObject, bool? shouldTrackEvent}) async
+  Future<void> delete<T extends Object>(String localObjectID, {T? localObject, bool shouldTrackEvent = true}) async
   {
-    var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
+    CKRecordStructure recordStructure;
+    if (T != Object)
+    {
+      recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
+    }
+    else
+    {
+      var uuidToTypeMap = await _databaseInstance.query(_uuidToTypeTableName, where: "uuid = ?", whereArgs: [localObjectID]);
+      if (uuidToTypeMap.length == 0) return;
+
+      var ckRecordType = uuidToTypeMap.first["type"] as String;
+      recordStructure = CKRecordParser.getRecordStructureFromRecordType(ckRecordType);
+    }
 
     await _databaseInstance.delete(recordStructure.ckRecordType, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [localObjectID]);
+    await _databaseInstance.delete(_uuidToTypeTableName, where: "uuid = ?", whereArgs: [localObjectID]);
 
     for (var field in recordStructure.fields)
     {
@@ -332,7 +352,6 @@ class CKLocalDatabaseManager
       await _databaseInstance.delete('`${recordStructure.ckRecordType}_${field.ckName}`', where: "`${recordStructure.ckRecordType}ID` = ?", whereArgs: [localObjectID]);
     }
 
-    shouldTrackEvent ??= true;
     if (shouldTrackEvent)
     {
       databaseEventHistory.add(CKDatabaseEvent<T>(

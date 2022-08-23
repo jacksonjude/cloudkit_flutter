@@ -7,18 +7,19 @@ import 'ck_sync_token.dart';
 class CKRecordZoneChangesRequest<T>
 {
   final CKZone _zoneID;
-  final CKSyncToken? _syncToken;
   final int? _resultsLimit;
   final List<String>? _recordFields;
+  final List<Type>? _recordTypes;
+  CKSyncToken? syncToken;
 
-  CKRecordZoneChangesRequest(this._zoneID, this._syncToken, this._resultsLimit, this._recordFields);
+  CKRecordZoneChangesRequest(this._zoneID, this.syncToken, this._resultsLimit, this._recordFields, this._recordTypes);
 
   /// Convert the record zone changes to JSON.
   Map<String, dynamic> toJSON() => {
     'zoneID': _zoneID.toJSON(),
-    'syncToken': _syncToken != null ? _syncToken.toString() : null,
+    'syncToken': syncToken != null ? syncToken.toString() : null,
     'resultsLimit': _resultsLimit,
-    'desiredRecordTypes': [CKRecordParser.getRecordStructureFromLocalType(T).ckRecordType],
+    'desiredRecordTypes': (_recordTypes ?? [T]).map((type) => CKRecordParser.getRecordStructureFromLocalType(type).ckRecordType).toList(),
     'desiredKeys': _recordFields
   };
 }
