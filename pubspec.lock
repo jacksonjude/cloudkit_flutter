@@ -7,14 +7,14 @@ packages:
       name: _fe_analyzer_shared
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "38.0.0"
+    version: "46.0.0"
   analyzer:
     dependency: transitive
     description:
       name: analyzer
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.4.1"
+    version: "4.6.0"
   args:
     dependency: transitive
     description:
@@ -383,10 +383,12 @@ packages:
   reflectable:
     dependency: "direct main"
     description:
-      name: reflectable
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "3.0.8"
+      path: reflectable
+      ref: master
+      resolved-ref: e2c1291cbe2d4a91fd0aef5fd88fed9a64bca7d5
+      url: "https://github.com/jacksonjude/reflectable.dart.git"
+    source: git
+    version: "3.0.9"
   rxdart:
     dependency: transitive
     description:
@@ -500,9 +502,11 @@ packages:
   sqlbrite:
     dependency: "direct main"
     description:
-      name: sqlbrite
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: "."
+      ref: master
+      resolved-ref: "1ae26030a91bc5b802a7efb46a81f8e9038ed159"
+      url: "https://github.com/jacksonjude/sqlbrite.git"
+    source: git
     version: "2.3.0"
   stack_trace:
     dependency: transitive
