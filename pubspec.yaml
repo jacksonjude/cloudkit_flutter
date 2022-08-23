@@ -18,7 +18,7 @@ dependencies:
   reflectable:
     git:
       url: https://github.com/jacksonjude/reflectable.dart.git
-      ref: master
+      ref: analyzer-4-fix
       path: reflectable
   build_runner: ^2.2.0
   shared_preferences: ^2.0.15
