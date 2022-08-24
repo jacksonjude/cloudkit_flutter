@@ -319,10 +319,10 @@ void testEmployee(Employee testEmployee) async
     if (operationCallback.state != CKOperationState.success) return;
 
     operationCallback.recordChanges.forEach((recordChange) {
-      var objectID = CKRecordParser.getIDFromLocalObject(recordChange.item1, recordStructure);
+      var objectID = recordChange.objectID;
 
       CKDatabaseEventType databaseEventType;
-      switch (recordChange.item2)
+      switch (recordChange.changeType)
       {
         case CKRecordChangeType.update:
           databaseEventType = CKDatabaseEventType.insert;
@@ -333,7 +333,7 @@ void testEmployee(Employee testEmployee) async
           break;
       }
 
-      CKLocalDatabaseManager.shared.databaseEventHistory.add(recordTypeAnnotation.createEvent(objectID, databaseEventType, localObject: recordChange.item1));
+      CKLocalDatabaseManager.shared.databaseEventHistory.add(recordTypeAnnotation.createEvent(objectID, databaseEventType, localObject: recordChange.localObject));
     });
 
     await CKLocalDatabaseManager.shared.databaseEventHistory.synchronizeAll();
