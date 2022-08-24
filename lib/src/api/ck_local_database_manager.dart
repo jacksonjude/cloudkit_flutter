@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:cloudkit_flutter/src/parsing/ck_field_structure.dart';
 import 'package:flutter/material.dart';
 import 'package:sqlbrite/sqlbrite.dart';
 import 'package:tuple/tuple.dart';
@@ -11,6 +13,7 @@ import '../ck_constants.dart';
 import 'request_models/ck_zone.dart';
 import 'ck_operation.dart';
 import 'request_models/ck_record_modify_request.dart';
+import '/src/parsing/types/ck_field_type.dart';
 
 class CKLocalDatabaseManager
 {
@@ -18,12 +21,12 @@ class CKLocalDatabaseManager
   static const _defaultVersionNumber = 1;
 
   static const _uuidToTypeTableName = "_UUID_Type";
+  static const _assetCacheTableName = "_Asset_Cache";
 
   final _databaseName;
   final _databaseVersion;
   late final CKDatabase _cloudDatabase;
   late final CKZone _cloudZone;
-  // late final Database _databaseInstance;
   late final BriteDatabase _databaseInstance;
 
   CKLocalDatabaseManager(this._databaseName, this._databaseVersion) : databaseEventHistory = CKDatabaseEventList();
@@ -76,6 +79,7 @@ class CKLocalDatabaseManager
         }
 
         await db.execute('CREATE TABLE `$_uuidToTypeTableName` (uuid TEXT, type TEXT)');
+        await db.execute('CREATE TABLE `$_assetCacheTableName` (fieldPath TEXT, checksum TEXT, cache BLOB)');
       }
     );
 
@@ -214,6 +218,13 @@ class CKLocalDatabaseManager
     return _convertFromSQLiteMap<T>(queryResults[0]);
   }
 
+  Future<Uint8List?> queryAssetCache(String checksum) async
+  {
+    var queryResults = await queryMapBySQL('SELECT * FROM `$_assetCacheTableName` WHERE checksum = ?', args: [checksum]);
+    if (queryResults.length == 0) return null;
+    return queryResults[0]["cache"];
+  }
+
   Future<List<Map<String,dynamic>>> queryMapBySQL(String sql, {List? args, bool copyObjects = true}) async
   {
     var queryResults = await _databaseInstance.rawQuery(sql, args);
@@ -284,7 +295,7 @@ class CKLocalDatabaseManager
       await _databaseInstance.executeAndTrigger([tableName], 'REPLACE INTO `$tableName`($columns) VALUES($valuesPlaceholderString)', values);
     }
 
-    _databaseInstance.execute('REPLACE INTO `$_uuidToTypeTableName` (uuid, type) VALUES(?, ?)', [objectID, tableName]);
+    await _databaseInstance.execute('REPLACE INTO `$_uuidToTypeTableName` (uuid, type) VALUES(?, ?)', [objectID, tableName]);
 
     if (shouldTrackEvent)
     {
@@ -304,6 +315,11 @@ class CKLocalDatabaseManager
     {
       await insert<T>(localObject, shouldTrackEvent: shouldTrackEvents);
     }
+  }
+
+  Future<void> insertAssetCache(CKFieldPath fieldPath, String checksum, Uint8List cache) async
+  {
+    await _databaseInstance.execute('REPLACE INTO `$_assetCacheTableName` (fieldPath, checksum, cache) VALUES(?, ?, ?)', [fieldPath.toString(), checksum, cache]);
   }
 
   Future<void> update<T extends Object>(T updatedLocalObject, {bool shouldTrackEvent = true}) async
@@ -348,8 +364,15 @@ class CKLocalDatabaseManager
 
     for (var field in recordStructure.fields)
     {
-      if (!field.type.sqlite.isList) continue;
-      await _databaseInstance.delete('`${recordStructure.ckRecordType}_${field.ckName}`', where: "`${recordStructure.ckRecordType}ID` = ?", whereArgs: [localObjectID]);
+      if (field.type == CKFieldType.ASSET_TYPE)
+      {
+        var fieldPath = CKFieldPath.fromFieldStructure(localObjectID, field);
+        await _databaseInstance.delete(_assetCacheTableName, where: "fieldPath = ?", whereArgs: [fieldPath.toString()]);
+      }
+      else if (field.type.sqlite.isList)
+      {
+        await _databaseInstance.delete('`${recordStructure.ckRecordType}_${field.ckName}`', where: "`${recordStructure.ckRecordType}ID` = ?", whereArgs: [localObjectID]);
+      }
     }
 
     if (shouldTrackEvent)

@@ -2,6 +2,9 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
+import '/src/api/ck_local_database_manager.dart';
+import '/src/parsing/ck_field_structure.dart';
+
 /// A representation of a CloudKit asset.
 class CKAsset
 {
@@ -15,11 +18,24 @@ class CKAsset
   /// The cached version of the asset.
   Uint8List? cachedData;
 
-  CKAsset(this.size, this.fileChecksum, {this.downloadURL, this.cachedData});
+  /// The field path to the asset.
+  CKFieldPath? fieldPath;
+
+  CKAsset(this.size, this.fileChecksum, {this.downloadURL, this.cachedData, this.fieldPath});
+
+  CKAsset.fromJSON(Map<String, dynamic> json, {this.fieldPath}) :
+        size = json["size"],
+        fileChecksum = json["fileChecksum"],
+        downloadURL = json["downloadURL"],
+        cachedData = json["cachedData"] != null ? Uint8List.fromList(json["cachedData"].cast<int>()) : null;
 
   /// Download the asset.
-  Future<Uint8List?> fetchAsset() async // TODO: Save bytes to database on fetch somehow (by hashed downloadURL or checksum?)
+  Future<Uint8List?> fetchAsset({CKLocalDatabaseManager? manager}) async
   {
+    if (cachedData != null) return cachedData;
+
+    var managerToUse = manager ?? CKLocalDatabaseManager.shared;
+    cachedData = await managerToUse.queryAssetCache(fileChecksum);
     if (cachedData != null) return cachedData;
 
     if (downloadURL == null) return null;
@@ -28,7 +44,9 @@ class CKAsset
     if (response.statusCode != 200) return null;
 
     cachedData = response.bodyBytes;
-    return response.bodyBytes;
+    if (cachedData != null && fieldPath != null) await managerToUse.insertAssetCache(fieldPath!, fileChecksum, cachedData!);
+
+    return cachedData;
   }
 
   /// Return the cached version of the asset as an image, if possible.
@@ -43,7 +61,6 @@ class CKAsset
   Map<String, dynamic> toJSON() => {
     "size": size,
     "fileChecksum": fileChecksum,
-    "downloadURL": downloadURL,
-    "cachedData": cachedData
+    "downloadURL": downloadURL
   };
 }

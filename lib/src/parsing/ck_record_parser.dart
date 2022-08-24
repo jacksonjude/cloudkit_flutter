@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:reflectable/reflectable.dart';
 import 'package:collection/collection.dart';
 
@@ -45,17 +43,23 @@ class CKRecordParser
         if (field is VariableMirror && _isTypeInArray<CKRecordNameAnnotation>(field.metadata)) // if the field is a variable and tagged with a CKRecordNameAnnotation ...
         {
           var recordNameFieldAnnotation = _getTypeFromArray<CKRecordNameAnnotation>(field.metadata); // get the annotation object
-          recordStructure.fields.add(CKFieldStructure(field.simpleName, CKConstants.RECORD_NAME_FIELD, CKFieldType.fromLocalType(field.reflectedType), recordNameFieldAnnotation)); // create a CKFieldData object for the record name field
+          recordStructure.fields.add(
+              CKFieldStructure(field.simpleName, CKConstants.RECORD_NAME_FIELD, CKFieldType.fromLocalType(field.reflectedType), ckRecordType, recordNameFieldAnnotation)
+          ); // create a CKFieldData object for the record name field
         }
         else if (field is VariableMirror && _isTypeInArray<CKReferenceFieldAnnotation>(field.metadata)) // if the field is a variable and tagged with a CKReferenceFieldAnnotation ...
         {
           var referenceFieldAnnotation = _getTypeFromArray<CKReferenceFieldAnnotation>(field.metadata); // get the annotation object
-          recordStructure.fields.add(CKFieldStructure(field.simpleName, referenceFieldAnnotation.name, CKFieldType.fromLocalType(field.reflectedType), referenceFieldAnnotation)); // create a CKFieldData object for the reference field
+          recordStructure.fields.add(
+              CKFieldStructure(field.simpleName, referenceFieldAnnotation.name, CKFieldType.fromLocalType(field.reflectedType), ckRecordType, referenceFieldAnnotation)
+          ); // create a CKFieldData object for the reference field
         }
         else if (field is VariableMirror && _isTypeInArray<CKFieldAnnotation>(field.metadata)) // if the field is a variable and tagged with a CKFieldAnnotation ...
         {
           var fieldAnnotation = _getTypeFromArray<CKFieldAnnotation>(field.metadata); // get the annotation object
-          recordStructure.fields.add(CKFieldStructure(field.simpleName, fieldAnnotation.name, CKFieldType.fromLocalType(field.reflectedType), fieldAnnotation)); // create a CKFieldData object for the current field
+          recordStructure.fields.add(
+              CKFieldStructure(field.simpleName, fieldAnnotation.name, CKFieldType.fromLocalType(field.reflectedType), ckRecordType, fieldAnnotation)
+          ); // create a CKFieldData object for the current field
         }
       });
 
@@ -97,7 +101,7 @@ class CKRecordParser
       var rawValue = recordData[field.ckName];
       if (rawValue == null) return;
 
-      var convertedValue = convertToLocalValue(field.type, field, rawValue, database);
+      var convertedValue = convertToLocalValue(field.type, field, rawValue, database, recordData[CKConstants.RECORD_NAME_FIELD]);
 
       instanceMirror.invokeSetter(field.localName, convertedValue);
     });
@@ -106,7 +110,7 @@ class CKRecordParser
   }
 
   /// Convert a single CloudKit record field to a local value.
-  static dynamic convertToLocalValue(CKFieldType fieldType, CKFieldStructure fieldStructure, dynamic rawValue, CKDatabase database)
+  static dynamic convertToLocalValue(CKFieldType fieldType, CKFieldStructure fieldStructure, dynamic rawValue, CKDatabase database, String recordName)
   {
     var convertedValue = rawValue;
 
@@ -151,14 +155,14 @@ class CKRecordParser
         var convertedList = referenceAnnotation.createReferenceList();
         rawValue.forEach((reference) {
           convertedList.add(
-            convertToLocalValue(CKFieldType.REFERENCE_TYPE, fieldStructure, reference, database)
+            convertToLocalValue(CKFieldType.REFERENCE_TYPE, fieldStructure, reference, database, recordName)
           );
         });
         convertedValue = convertedList;
         break;
 
       case CKFieldType.ASSET_TYPE:
-        var newAsset = CKAsset(rawValue["size"], rawValue["fileChecksum"], downloadURL: rawValue["downloadURL"], cachedData: rawValue["cachedData"] != null ? Uint8List.fromList(rawValue["cachedData"].cast<int>()) : null);
+        var newAsset = CKAsset.fromJSON(rawValue, fieldPath: CKFieldPath.fromFieldStructure(recordName, fieldStructure));
         convertedValue = newAsset;
         break;
 
@@ -169,7 +173,7 @@ class CKRecordParser
           var newTestInstance = currentClassMirrorForType.newInstance("", []);
           if (newTestInstance is CKCustomFieldType)
           {
-            var baseConvertedValue = convertToLocalValue(CKFieldType.fromRecordType(fieldType.record), fieldStructure, rawValue, database);
+            var baseConvertedValue = convertToLocalValue(CKFieldType.fromRecordType(fieldType.record), fieldStructure, rawValue, database, recordName);
             convertedValue = currentClassMirrorForType.newInstance("fromRecordField", [baseConvertedValue]);
             break;
           }

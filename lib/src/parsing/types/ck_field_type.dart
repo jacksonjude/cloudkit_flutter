@@ -15,7 +15,7 @@ class CKFieldType
   static const REFERENCE_TYPE = CKFieldType("CKReference", "REFERENCE", SQLiteType.REFERENCE_TYPE);
   static const LIST_REFERENCE_TYPE = CKFieldType("List<CKReference>", "REFERENCE_LIST", SQLiteType.REFERENCE_LIST_TYPE);
 
-  static const ASSET_TYPE = CKFieldType("CKAsset", "ASSETID", SQLiteType.BLOB_TYPE);
+  static const ASSET_TYPE = CKFieldType("CKAsset", "ASSETID", SQLiteType.TEXT_TYPE);
 
   static const ALL_TYPES = [STRING_TYPE, INT_TYPE, DOUBLE_TYPE, LIST_STRING_TYPE, LIST_INT_TYPE, DATETIME_TYPE, REFERENCE_TYPE, LIST_REFERENCE_TYPE, ASSET_TYPE];
 

@@ -6,9 +6,10 @@ class CKFieldStructure
   final String localName;
   final String ckName;
   final CKFieldType type;
+  final String ckRecordType;
   final CKFieldAnnotation annotation;
 
-  const CKFieldStructure(this.localName, this.ckName, this.type, this.annotation);
+  const CKFieldStructure(this.localName, this.ckName, this.type, this.ckRecordType, this.annotation);
 
   @override
   String toString() {
@@ -22,4 +23,20 @@ class CKFieldStructure
 
     return stringOutput;
   }
+}
+
+class CKFieldPath
+{
+  final String recordType;
+  final String recordName;
+  final String fieldName;
+
+  CKFieldPath(this.recordType, this.recordName, this.fieldName);
+
+  CKFieldPath.fromFieldStructure(this.recordName, CKFieldStructure fieldStructure) :
+        recordType = fieldStructure.ckRecordType,
+        fieldName = fieldStructure.ckName;
+
+  @override
+  String toString() => recordName + "_" + fieldName;
 }
