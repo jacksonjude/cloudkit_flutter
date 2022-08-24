@@ -307,41 +307,5 @@ void testEmployee(Employee testEmployee) async
   var department = await testEmployee.department?.fetchCloud();
   print(department?.name);
 
-  // TODO: Clean up this demo code
-  for (var type in [Employee, Department])
-  {
-    var recordStructure = CKRecordParser.getRecordStructureFromLocalType(type);
-    if (recordStructure.recordTypeAnnotation == null) return;
-    var recordTypeAnnotation = recordStructure.recordTypeAnnotation!;
-
-    var zoneChangesOperation = recordTypeAnnotation.createRecordZoneChangesOperation(CKZone("testZone"), CKDatabase.PRIVATE_DATABASE);
-    var operationCallback = await zoneChangesOperation.execute();
-    if (operationCallback.state != CKOperationState.success) return;
-
-    operationCallback.recordChanges.forEach((recordChange) {
-      var objectID = recordChange.objectID;
-
-      CKDatabaseEventType databaseEventType;
-      switch (recordChange.changeType)
-      {
-        case CKRecordChangeType.update:
-          databaseEventType = CKDatabaseEventType.insert;
-          break;
-
-        case CKRecordChangeType.delete:
-          databaseEventType = CKDatabaseEventType.delete;
-          break;
-      }
-
-      CKLocalDatabaseManager.shared.databaseEventHistory.add(recordTypeAnnotation.createEvent(objectID, databaseEventType, localObject: recordChange.localObject));
-    });
-
-    await CKLocalDatabaseManager.shared.databaseEventHistory.synchronizeAll();
-  }
-
-  var testEmployeeFetch = await CKLocalDatabaseManager.shared.queryByID<Employee>(testEmployee.uuid!);
-  print(testEmployeeFetch);
-  var departmentFetch = await testEmployeeFetch?.department?.fetch();
-  var departmentEmployeeFetch = await CKReference.fetchAll<Employee>(departmentFetch?.employees ?? []);
-  print(departmentEmployeeFetch);
+  // TODO: Show database sync
 }

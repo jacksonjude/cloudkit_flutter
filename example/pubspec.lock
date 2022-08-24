@@ -398,8 +398,8 @@ packages:
     dependency: transitive
     description:
       path: reflectable
-      ref: master
-      resolved-ref: e2c1291cbe2d4a91fd0aef5fd88fed9a64bca7d5
+      ref: analyzer-4-fix
+      resolved-ref: "2619f169ecfd4941eeda1ab8d4ebe73914160c6a"
       url: "https://github.com/jacksonjude/reflectable.dart.git"
     source: git
     version: "3.0.9"

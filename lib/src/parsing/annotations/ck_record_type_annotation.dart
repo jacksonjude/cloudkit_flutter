@@ -1,9 +1,4 @@
-import '../../api/request_models/ck_record_zone_changes_request.dart';
-import '../../api/request_models/ck_sync_token.dart';
-import '../../api/request_models/ck_zone.dart';
 import '../../api/ck_local_database_manager.dart';
-import '../../api/ck_operation.dart';
-import '../../api/ck_api_manager.dart';
 import '../../ck_constants.dart';
 import '../ck_record_parser.dart';
 
@@ -19,11 +14,6 @@ class CKRecordTypeAnnotation<T extends Object>
   {
     var managerToUse = manager ?? CKLocalDatabaseManager.shared;
     return CKDatabaseEvent<T>(managerToUse, type, CKDatabaseEventSource.cloud, localObjectID, localObject);
-  }
-
-  CKRecordZoneChangesOperation<T> createRecordZoneChangesOperation(CKZone zone, CKDatabase database, {CKRecordZoneChangesRequest? zoneChangesRequest, CKSyncToken? syncToken, int? resultsLimit, List<String>? recordFields, bool? preloadAssets, CKAPIManager? apiManager})
-  {
-    return CKRecordZoneChangesOperation<T>(database, zoneID: zone, zoneChangesRequest: zoneChangesRequest, syncToken: syncToken, resultsLimit: resultsLimit, recordFields: recordFields, preloadAssets: preloadAssets, apiManager: apiManager);
   }
 
   T recordToLocalObject(dynamic recordMap, CKDatabase database)
