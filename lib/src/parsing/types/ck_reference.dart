@@ -42,12 +42,14 @@ class CKReference<T extends Object>
     return localObject;
   }
 
-  static Future<List<T?>> fetchAll<T extends Object>(List<CKReference<T>> references, {CKLocalDatabaseManager? manager}) async
+  static Future<List<T>> fetchAll<T extends Object>(List<CKReference<T>> references, {CKLocalDatabaseManager? manager}) async
   {
-    List<T?> localObjects = [];
+    List<T> localObjects = [];
     for (var reference in references)
     {
-      localObjects.add(await reference.fetch(manager: manager));
+      var localObject = await reference.fetch(manager: manager);
+      if (localObject == null) continue;
+      localObjects.add(localObject);
     }
     return localObjects;
   }
