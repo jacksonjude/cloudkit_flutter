@@ -3,6 +3,7 @@ import 'package:quiver/iterables.dart';
 
 import '/src/parsing/ck_record_structure.dart';
 import 'ck_api_manager.dart';
+import 'ck_notification_manager.dart';
 import 'request_models/ck_record_query_request.dart';
 import 'request_models/ck_record_zone_changes_request.dart';
 import 'request_models/ck_zone.dart';
@@ -314,5 +315,52 @@ class CKRecordModifyOperation<T extends Object> extends CKPostOperation
   {
     CKOperationCallback recordModifyCallback = await super.execute();
     return recordModifyCallback;
+  }
+}
+
+/// An operation to create an APNs token
+class CKAPNSCreateTokenOperation extends CKPostOperation
+{
+  final CKAPNSEnvironment _apnsEnvironment;
+
+  CKAPNSCreateTokenOperation(this._apnsEnvironment, {CKAPIManager? apiManager}) : super(CKAPIModule.DEVICE, apiManager: apiManager);
+
+  @override
+  String _getAPIPath() => "tokens/create";
+
+  @override
+  Map<String, dynamic>? _getBody() => {
+    "apnsEnvironment": _apnsEnvironment.toString()
+  };
+
+  @override
+  Future<CKOperationCallback<CKAPNSToken>> execute() async
+  {
+    CKOperationCallback createTokenCallback = await super.execute();
+    print(createTokenCallback.response);
+    return CKOperationCallback<CKAPNSToken>(createTokenCallback.state,
+        response: createTokenCallback.state == CKOperationState.success ? CKAPNSToken.fromJSON(createTokenCallback.response) : null
+    );
+  }
+}
+
+/// An operation to register an APNs token
+class CKAPNSRegisterTokenOperation extends CKPostOperation
+{
+  final CKAPNSToken _token;
+
+  CKAPNSRegisterTokenOperation(this._token, {CKAPIManager? apiManager}) : super(CKAPIModule.DEVICE, apiManager: apiManager);
+
+  @override
+  String _getAPIPath() => "tokens/register";
+
+  @override
+  Map<String, dynamic>? _getBody() => _token.toJSON();
+
+  @override
+  Future<CKOperationCallback> execute() async
+  {
+    CKOperationCallback registerTokenCallback = await super.execute();
+    return registerTokenCallback;
   }
 }
