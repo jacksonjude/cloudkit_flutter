@@ -10,10 +10,9 @@ class CKRecordTypeAnnotation<T extends Object>
 
   const CKRecordTypeAnnotation(this.type);
 
-  CKDatabaseEvent<T> createEvent(String localObjectID, CKDatabaseEventType type, {T? localObject, CKLocalDatabaseManager? manager})
+  CKDatabaseEvent<T> createEvent(String localObjectID, CKDatabaseEventType type, {T? localObject})
   {
-    var managerToUse = manager ?? CKLocalDatabaseManager.shared;
-    return CKDatabaseEvent<T>(managerToUse, type, CKDatabaseEventSource.cloud, localObjectID, localObject);
+    return CKDatabaseEvent<T>(type, CKDatabaseEventSource.cloud, localObjectID, localObject);
   }
 
   T recordToLocalObject(dynamic recordMap, CKDatabase database)
