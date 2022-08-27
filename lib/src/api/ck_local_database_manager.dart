@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -11,8 +12,10 @@ import '/src/parsing/ck_record_structure.dart';
 import '/src/parsing/types/ck_field_type.dart';
 import '/src/ck_constants.dart';
 import 'request_models/ck_zone.dart';
-import 'ck_operation.dart';
+import 'request_models/ck_sync_token.dart';
 import 'request_models/ck_record_modify_request.dart';
+import 'ck_notification_manager.dart';
+import 'ck_operation.dart';
 
 class CKLocalDatabaseManager
 {
@@ -40,6 +43,10 @@ class CKLocalDatabaseManager
   }
 
   late CKDatabaseEventList databaseEventHistory;
+
+  List<Type>? syncRecordTypes;
+  StreamSubscription<CKNotification>? notificationStreamSubscription;
+  CKSyncToken? syncToken;
 
   static Future<void> initializeDatabase(Map<Type,CKRecordStructure> recordStructures, {CKDatabase? database, CKZone? zone, CKLocalDatabaseManager? manager}) async
   {
@@ -85,6 +92,72 @@ class CKLocalDatabaseManager
     managerToInit._databaseInstance = BriteDatabase(databaseInstance);
 
     managerToInit.databaseEventHistory = CKDatabaseEventList(managerToInit);
+
+    managerToInit.syncRecordTypes = recordStructures.keys.toList();
+  }
+
+  Future<void> initCloudSync(CKAPNSEnvironment environment) async
+  {
+    var notificationStream = await CKNotificationManager.shared.registerForRemoteNotifications(environment);
+    notificationStreamSubscription = notificationStream.listen((notification) {
+      syncCloudData();
+    });
+
+    await syncCloudData();
+  }
+
+  Future<void> syncCloudData() async
+  {
+    var zoneChangesOperation = CKRecordZoneChangesOperation(
+        CKDatabase.PRIVATE_DATABASE,
+        zoneID: CKZone("CloudCore"),
+        syncToken: syncToken,
+        recordTypes: syncRecordTypes
+    );
+    var changesOperationCallback = await zoneChangesOperation.execute();
+
+    var groupedChanges = changesOperationCallback.recordChanges.groupBy((recordChange) => recordChange.recordType);
+    groupedChanges.forEach((recordType, recordChanges) {
+      if (recordType != dynamic)
+      {
+        var recordStructure = CKRecordParser.getRecordStructureFromLocalType(recordType);
+        var recordTypeAnnotation = recordStructure.recordTypeAnnotation!;
+
+        recordChanges.forEach((recordChange) {
+          var objectID = CKRecordParser.getIDFromLocalObject(recordChange.localObject, recordStructure);
+
+          CKDatabaseEventType databaseEventType;
+          switch (recordChange.changeType)
+          {
+            case CKRecordChangeType.update:
+              databaseEventType = CKDatabaseEventType.insert;
+              break;
+
+            case CKRecordChangeType.delete:
+              databaseEventType = CKDatabaseEventType.delete;
+              break;
+          }
+
+          CKLocalDatabaseManager.shared.databaseEventHistory.add(recordTypeAnnotation.createEvent(objectID, databaseEventType, localObject: recordChange.localObject));
+        });
+      }
+      else
+      {
+        recordChanges.removeWhere((recordChange) => recordChange.changeType != CKRecordChangeType.delete);
+        recordChanges.forEach((recordChange) {
+          CKLocalDatabaseManager.shared.databaseEventHistory.add(CKDatabaseEvent(CKDatabaseEventType.delete, CKDatabaseEventSource.cloud, recordChange.objectID));
+        });
+      }
+    });
+
+    syncToken = changesOperationCallback.syncToken;
+
+    await CKLocalDatabaseManager.shared.databaseEventHistory.synchronizeAll();
+  }
+
+  Future<void> stopCloudSync() async
+  {
+    await notificationStreamSubscription?.cancel();
   }
 
   Future<Map<String, dynamic>> _formatForSQLite<T>(Map<String, dynamic> recordJSON, {IBriteBatch? batch}) async
@@ -549,4 +622,11 @@ class CKDatabaseEventList
       }
     });
   }
+}
+
+extension Iterables<E> on Iterable<E> {
+  Map<K, List<E>> groupBy<K>(K Function(E) keyFunction) => fold(
+      <K, List<E>>{},
+          (Map<K, List<E>> map, E element) =>
+      map..putIfAbsent(keyFunction(element), () => <E>[]).add(element));
 }
