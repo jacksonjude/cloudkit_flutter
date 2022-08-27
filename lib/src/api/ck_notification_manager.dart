@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:async/async.dart';
 
 import '/src/ck_constants.dart';
 import 'ck_api_manager.dart';
@@ -15,6 +16,8 @@ class CKNotificationManager
   CKAPNSToken? _token;
   StreamController<CKNotification>? _notificationStreamController;
   Queue<CKNotification>? _notificationQueue;
+  CancelableOperation<http.Response>? subscriptionRequest;
+  int retryTimeout = 1;
 
   static CKNotificationManager? _instance;
 
@@ -31,24 +34,36 @@ class CKNotificationManager
     _notificationQueue = Queue<CKNotification>();
 
     Future<void> subscribe() async {
-      var response = await http.post(Uri.parse(_token!.webCourierURL));
+      var subscribeFuture = http.post(Uri.parse(_token!.webCourierURL));
+      subscriptionRequest = CancelableOperation<http.Response>.fromFuture(subscribeFuture);
+
+      var response = await subscriptionRequest?.valueOrCancellation();
+      if (response == null) return;
+
       if (response.statusCode == 502) // timeout
       {
         subscribe();
       }
       else if (response.statusCode == 403) // invalid token
       {
-        print("Regenerating notification token: ${response.reasonPhrase}, ${response.body}");
+        print("Regenerating notification token: ${response.reasonPhrase}, ${response.body}; Retry in ${retryTimeout}s");
         await _createToken(environment, apiManager: apiManager, shouldResetToken: true);
-        Timer(Duration(seconds: 1), () => subscribe());
+        Timer(Duration(seconds: retryTimeout), () {
+          retryTimeout *= 2;
+          subscribe();
+        });
       }
       else if (response.statusCode != 200) // error
       {
-        print("Notification error: ${response.reasonPhrase}, ${response.body}");
-        Timer(Duration(seconds: 1), () => subscribe());
+        print("Notification error: ${response.reasonPhrase}, ${response.body}; Retry in ${retryTimeout}s");
+        Timer(Duration(seconds: retryTimeout), () {
+          retryTimeout *= 2;
+          subscribe();
+        });
       }
       else
       {
+        retryTimeout = 1;
         if (_notificationStreamController == null || _notificationStreamController!.isClosed) return;
 
         var notification = CKNotification.fromJSON(jsonDecode(response.body));
@@ -77,7 +92,9 @@ class CKNotificationManager
           _notificationStreamController!.add(queueNotification);
         }
       },
-      onCancel: () {}
+      onCancel: () {
+        subscriptionRequest?.cancel();
+      }
     );
 
     return _notificationStreamController!.stream;
