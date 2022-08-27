@@ -1,6 +1,6 @@
-import '../../api/ck_local_database_manager.dart';
-import '../../ck_constants.dart';
-import '../ck_record_parser.dart';
+import '/src/api/ck_local_database_manager.dart';
+import '/src/ck_constants.dart';
+import '/src/parsing/ck_record_parser.dart';
 
 /// An annotation to link a local model class to a CloudKit record type.
 class CKRecordTypeAnnotation<T extends Object>

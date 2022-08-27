@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-import '../ck_constants.dart';
+import '/src/ck_constants.dart';
 
 class CKAuthWebView extends StatefulWidget
 {

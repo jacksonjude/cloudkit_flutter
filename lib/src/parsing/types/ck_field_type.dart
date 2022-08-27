@@ -1,6 +1,6 @@
 import 'package:reflectable/reflectable.dart';
 
-import '../reflector.dart';
+import '/src/parsing/reflector.dart';
 
 /// Represents the field type for the local field and the CloudKit record field.
 class CKFieldType

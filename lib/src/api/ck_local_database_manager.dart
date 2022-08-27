@@ -1,19 +1,18 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:cloudkit_flutter/src/parsing/ck_field_structure.dart';
 import 'package:flutter/material.dart';
 import 'package:sqlbrite/sqlbrite.dart';
 import 'package:tuple/tuple.dart';
 
-import '../parsing/ck_record_parser.dart';
-import '../parsing/ck_record_structure.dart';
-import '../parsing/types/ck_field_type.dart';
-import '../ck_constants.dart';
+import '/src/parsing/ck_field_structure.dart';
+import '/src/parsing/ck_record_parser.dart';
+import '/src/parsing/ck_record_structure.dart';
+import '/src/parsing/types/ck_field_type.dart';
+import '/src/ck_constants.dart';
 import 'request_models/ck_zone.dart';
 import 'ck_operation.dart';
 import 'request_models/ck_record_modify_request.dart';
-import '/src/parsing/types/ck_field_type.dart';
 
 class CKLocalDatabaseManager
 {

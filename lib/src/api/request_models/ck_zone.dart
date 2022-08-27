@@ -1,4 +1,4 @@
-import '../../ck_constants.dart';
+import '/src/ck_constants.dart';
 
 /// A container class for a CloudKit zone ID.
 class CKZone

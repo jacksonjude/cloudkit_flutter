@@ -1,7 +1,7 @@
 import 'package:reflectable/reflectable.dart';
 import 'package:collection/collection.dart';
 
-import '../ck_constants.dart';
+import '/src/ck_constants.dart';
 import 'types/ck_reference.dart';
 import 'types/ck_asset.dart';
 import 'reflector.dart';
@@ -12,7 +12,7 @@ import 'annotations/ck_field_annotation.dart';
 import 'ck_record_structure.dart';
 import 'ck_field_structure.dart';
 import 'types/ck_field_type.dart';
-import '../api/request_models/ck_zone.dart';
+import '/src/api/request_models/ck_zone.dart';
 
 /// The class that handles local model class annotation parsing.
 class CKRecordParser

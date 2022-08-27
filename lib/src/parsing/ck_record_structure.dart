@@ -1,7 +1,7 @@
-import 'package:cloudkit_flutter/src/parsing/annotations/ck_record_type_annotation.dart';
 import 'package:reflectable/reflectable.dart';
 
 import 'ck_field_structure.dart';
+import 'annotations/ck_record_type_annotation.dart';
 
 class CKRecordStructure
 {

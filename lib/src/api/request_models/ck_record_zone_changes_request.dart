@@ -1,4 +1,4 @@
-import '../../parsing/ck_record_parser.dart';
+import '/src/parsing/ck_record_parser.dart';
 
 import 'ck_zone.dart';
 import 'ck_sync_token.dart';

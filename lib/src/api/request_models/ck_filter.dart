@@ -1,6 +1,5 @@
-import 'package:cloudkit_flutter/src/ck_constants.dart';
-
-import '../../parsing/types/ck_field_type.dart';
+import '/src/parsing/types/ck_field_type.dart';
+import '/src/ck_constants.dart';
 
 /// A representation of a CloudKit filter.
 class CKFilter
