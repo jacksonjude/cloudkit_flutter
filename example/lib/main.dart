@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:cloudkit_flutter/cloudkit_flutter_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 

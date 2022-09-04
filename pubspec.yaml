@@ -23,10 +23,7 @@ dependencies:
   build_runner: ^2.2.0
   shared_preferences: ^2.0.15
   sqflite: ^2.0.3+1
-  sqlbrite:
-    git:
-      url: https://github.com/jacksonjude/sqlbrite.git
-      ref: master
+  sqlbrite: ^2.3.0
   tuple: ^2.0.0
   quiver: ^3.1.0
 

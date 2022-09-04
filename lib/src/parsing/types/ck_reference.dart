@@ -2,7 +2,7 @@ import '/src/api/ck_operation.dart';
 import '/src/api/request_models/ck_filter.dart';
 import '/src/api/request_models/ck_zone.dart';
 import '/src/ck_constants.dart';
-import '/src/api/ck_local_database_manager.dart';
+import '../../database/ck_local_database_manager.dart';
 import 'ck_field_type.dart';
 
 /// A representation of a CloudKit reference.

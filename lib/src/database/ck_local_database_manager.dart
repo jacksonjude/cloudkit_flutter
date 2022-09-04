@@ -4,18 +4,17 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:sqlbrite/sqlbrite.dart';
-import 'package:tuple/tuple.dart';
 
 import '/src/parsing/ck_field_structure.dart';
 import '/src/parsing/ck_record_parser.dart';
 import '/src/parsing/ck_record_structure.dart';
 import '/src/parsing/types/ck_field_type.dart';
 import '/src/ck_constants.dart';
-import 'request_models/ck_zone.dart';
-import 'request_models/ck_sync_token.dart';
-import 'request_models/ck_record_modify_request.dart';
-import 'ck_notification_manager.dart';
-import 'ck_operation.dart';
+import '/src/api/request_models/ck_zone.dart';
+import '/src/api/request_models/ck_sync_token.dart';
+import '/src/api/ck_notification_manager.dart';
+import '/src/api/ck_operation.dart';
+import 'ck_database_event.dart';
 
 class CKLocalDatabaseManager
 {
@@ -27,8 +26,8 @@ class CKLocalDatabaseManager
 
   final _databaseName;
   final _databaseVersion;
-  late final CKDatabase _cloudDatabase;
-  late final CKZone _cloudZone;
+  late final CKDatabase cloudDatabase;
+  late final CKZone cloudZone;
   late final BriteDatabase _databaseInstance;
 
   CKLocalDatabaseManager(this._databaseName, this._databaseVersion);
@@ -54,8 +53,8 @@ class CKLocalDatabaseManager
 
     var managerToInit = manager ?? CKLocalDatabaseManager.shared;
 
-    managerToInit._cloudDatabase = database ?? CKDatabase.PRIVATE_DATABASE;
-    managerToInit._cloudZone = zone ?? CKZone();
+    managerToInit.cloudDatabase = database ?? CKDatabase.PRIVATE_DATABASE;
+    managerToInit.cloudZone = zone ?? CKZone();
 
     deleteDatabase(managerToInit._databaseName); // TODO: REMOVE THIS AFTER TESTING
 
@@ -231,16 +230,16 @@ class CKLocalDatabaseManager
           case CKFieldType.REFERENCE_TYPE:
             rawJSON[field.ckName] = {
               CKConstants.RECORD_NAME_FIELD: rawJSON[field.ckName],
-              "database": _cloudDatabase,
-              "zone": _cloudZone
+              "database": cloudDatabase,
+              "zone": cloudZone
             };
             break;
 
           case CKFieldType.LIST_REFERENCE_TYPE:
             rawJSON[field.ckName] = (rawJSON[field.ckName] as List).map((referenceID) => {
               CKConstants.RECORD_NAME_FIELD: referenceID,
-              "database": _cloudDatabase,
-              "zone": _cloudZone
+              "database": cloudDatabase,
+              "zone": cloudZone
             }).toList();
             break;
 
@@ -308,7 +307,7 @@ class CKLocalDatabaseManager
   Future<T> _convertFromSQLiteMap<T>(Map<String,dynamic> rawJSON) async
   {
     var decodedJSON = await _decodeFromSQLite<T>(rawJSON);
-    T localObject = CKRecordParser.simpleJSONToLocalObject<T>(decodedJSON, this._cloudDatabase);
+    T localObject = CKRecordParser.simpleJSONToLocalObject<T>(decodedJSON, this.cloudDatabase);
     return localObject;
   }
 
@@ -463,170 +462,142 @@ class CKLocalDatabaseManager
       ));
     }
   }
+
+  IBriteBatch batch()
+  {
+    return _databaseInstance.batch();
+  }
 }
 
-class CKDatabaseEvent<T extends Object>
+extension Iterables<E> on Iterable<E>
 {
-  final CKDatabaseEventType _eventType;
-  final CKDatabaseEventSource _source;
-  final String _objectID;
-  T? localObject;
-
-  CKDatabaseEvent(this._eventType, this._source, this._objectID, [this.localObject]);
-
-  Future<void> synchronize(CKLocalDatabaseManager databaseManager, [IBriteBatch? batch]) async
-  {
-    switch (_source)
-    {
-      case CKDatabaseEventSource.local:
-        await performOnCloudDatabase(databaseManager);
-        break;
-
-      case CKDatabaseEventSource.cloud:
-        await performOnLocalDatabase(databaseManager, batch);
-        break;
-    }
-  }
-
-  Future<void> performOnCloudDatabase(CKLocalDatabaseManager databaseManager) async
-  {
-    if (localObject == null) return;
-
-    CKRecordOperationType operationType;
-    switch (_eventType)
-    {
-      case CKDatabaseEventType.insert:
-        operationType = CKRecordOperationType.CREATE;
-        break;
-
-      case CKDatabaseEventType.update:
-        operationType = CKRecordOperationType.UPDATE;
-        break;
-
-      case CKDatabaseEventType.delete:
-        operationType = CKRecordOperationType.DELETE;
-        break;
-    }
-
-    var modifyOperation = CKRecordModifyOperation<T>(databaseManager._cloudDatabase, objectsToModify: [Tuple2<T,CKRecordOperationType>(localObject!, operationType)]);
-    var responseCallback = await modifyOperation.execute();
-    print(responseCallback);
-  }
-
-  Future<void> performOnLocalDatabase(CKLocalDatabaseManager databaseManager, [IBriteBatch? batch]) async
-  {
-    switch (_eventType)
-    {
-      case CKDatabaseEventType.insert:
-        if (localObject == null) return;
-        await databaseManager.insert<T>(localObject!, shouldUseReplace: true, shouldTrackEvent: false, batch: batch);
-        break;
-
-      case CKDatabaseEventType.update:
-        if (localObject == null) return;
-        await databaseManager.update<T>(localObject!, shouldTrackEvent: false, batch: batch);
-        break;
-
-      case CKDatabaseEventType.delete:
-        await databaseManager.delete<T>(_objectID, shouldTrackEvent: false, batch: batch);
-        break;
-    }
-  }
-}
-
-enum CKDatabaseEventType
-{
-  insert,
-  update,
-  delete
-}
-
-enum CKDatabaseEventSource
-{
-  cloud,
-  local
-}
-
-class CKDatabaseEventList
-{
-  final List<CKDatabaseEvent> _l;
-  final CKLocalDatabaseManager _databaseManager;
-  CKDatabaseEventList(this._databaseManager) : _l = [];
-
-  bool isSyncing = false;
-
-  void add(CKDatabaseEvent element)
-  {
-    _l.add(element);
-    _cleanEvents();
-  }
-
-  Future<void> synchronizeAll() async
-  {
-    if (isSyncing) return;
-    isSyncing = true;
-
-    var syncBatch = _databaseManager._databaseInstance.batch();
-
-    for (var i=0; i < _l.length; i++)
-    {
-      await _l[i].synchronize(_databaseManager, syncBatch);
-      _l.removeAt(i);
-      i--;
-    }
-
-    await syncBatch.commit(noResult: true);
-
-    isSyncing = false;
-  }
-
-  void _cleanEvents() // TODO: Account for local vs cloud changes
-  {
-    this._l.forEach((event) {
-      switch (event._eventType)
-      {
-        case CKDatabaseEventType.insert:
-          var deleteEvents = this._l.where((testEvent) => testEvent._objectID == event._objectID && testEvent._eventType == CKDatabaseEventType.delete);
-          if (deleteEvents.isNotEmpty)
-          {
-            this._l.remove(event);
-            this._l.remove(deleteEvents.first);
-
-            this._l.removeWhere((testEvent) => testEvent._objectID == testEvent._objectID);
-            return;
-          }
-
-          var updateEvents = this._l.where((testEvent) => testEvent._objectID == event._objectID && testEvent._eventType == CKDatabaseEventType.update);
-          if (updateEvents.isNotEmpty)
-          {
-            event.localObject = updateEvents.last.localObject;
-            updateEvents.forEach((updateEvent) {
-              this._l.remove(updateEvent);
-            });
-          }
-          break;
-
-        case CKDatabaseEventType.update:
-          var updateEvents = this._l.where((testEvent) => testEvent != event && testEvent._objectID == event._objectID && testEvent._eventType == CKDatabaseEventType.update);
-          if (updateEvents.isNotEmpty)
-          {
-            event.localObject = updateEvents.last.localObject;
-            updateEvents.forEach((updateEvent) {
-              this._l.remove(updateEvent);
-            });
-          }
-          break;
-
-        case CKDatabaseEventType.delete:
-          break;
-      }
-    });
-  }
-}
-
-extension Iterables<E> on Iterable<E> {
   Map<K, List<E>> groupBy<K>(K Function(E) keyFunction) => fold(
       <K, List<E>>{},
           (Map<K, List<E>> map, E element) =>
       map..putIfAbsent(keyFunction(element), () => <E>[]).add(element));
+}
+
+extension AsyncMapToListQueryStreamExtensions on Stream<Query>
+{
+  Stream<List<T>> asyncMapToList<T>(Future<T> Function(JSON row) rowMapper) {
+    final controller = isBroadcast
+        ? StreamController<List<T>>.broadcast(sync: false)
+        : StreamController<List<T>>(sync: false);
+    // Instance cancelled in controller.onCancel, but transfer to temporary variable necessary
+    // ignore: cancel_subscriptions
+    StreamSubscription<Query>? subscription;
+
+    Future<void> add(List<JSON> rows) async {
+      try {
+        List<T> items = [];
+        for (var row in rows) items.add(await rowMapper(row));
+        controller.add(List.unmodifiable(items));
+      } catch (e, s) {
+        controller.addError(e, s);
+      }
+    }
+
+    controller.onListen = () {
+      subscription = listen(
+            (query) {
+          Future<List<JSON>> future;
+
+          try {
+            future = query();
+          } catch (e, s) {
+            controller.addError(e, s);
+            return;
+          }
+
+          subscription!.pause();
+          future
+              .then(add, onError: controller.addError)
+              .whenComplete(subscription!.resume);
+        },
+        onError: controller.addError,
+        onDone: controller.close,
+      );
+
+      if (!isBroadcast) {
+        controller.onPause = () => subscription!.pause();
+        controller.onResume = () => subscription!.resume();
+      }
+    };
+    controller.onCancel = () {
+      final toCancel = subscription;
+      subscription = null;
+      return toCancel?.cancel();
+    };
+
+    return controller.stream;
+  }
+}
+
+extension AsyncMapToOneQueryStreamExtensions on Stream<Query>
+{
+  Stream<T> asyncMapToOne<T>(final Future<T> Function(JSON row) rowMapper) {
+    final controller = isBroadcast
+        ? StreamController<T>.broadcast(sync: false)
+        : StreamController<T>(sync: false);
+    // Instance cancelled in controller.onCancel, but transfer to temporary variable necessary
+    // ignore: cancel_subscriptions
+    StreamSubscription<Query>? subscription;
+
+    Future<void> add(List<JSON> rows) async {
+      final length = rows.length;
+
+      if (length > 1) {
+        controller.addError(StateError('Query returned more than 1 row'));
+        return;
+      }
+
+      if (length == 0) {
+        controller.addError(StateError('Query returned 0 row'));
+        return;
+      }
+
+      final T result;
+      try {
+        result = await rowMapper(rows[0]);
+      } catch (e, s) {
+        controller.addError(e, s);
+        return;
+      }
+
+      controller.add(result);
+    }
+
+    controller.onListen = () {
+      subscription = listen(
+            (query) {
+          Future<List<JSON>> future;
+          try {
+            future = query();
+          } catch (e, s) {
+            controller.addError(e, s);
+            return;
+          }
+
+          subscription!.pause();
+          future
+              .then(add, onError: controller.addError)
+              .whenComplete(subscription!.resume);
+        },
+        onError: controller.addError,
+        onDone: controller.close,
+      );
+
+      if (!isBroadcast) {
+        controller.onPause = () => subscription!.pause();
+        controller.onResume = () => subscription!.resume();
+      }
+    };
+    controller.onCancel = () {
+      final toCancel = subscription;
+      subscription = null;
+      return toCancel?.cancel();
+    };
+
+    return controller.stream;
+  }
 }

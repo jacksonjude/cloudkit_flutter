@@ -516,11 +516,9 @@ packages:
   sqlbrite:
     dependency: transitive
     description:
-      path: "."
-      ref: master
-      resolved-ref: "1ae26030a91bc5b802a7efb46a81f8e9038ed159"
-      url: "https://github.com/jacksonjude/sqlbrite.git"
-    source: git
+      name: sqlbrite
+      url: "https://pub.dartlang.org"
+    source: hosted
     version: "2.3.0"
   stack_trace:
     dependency: transitive

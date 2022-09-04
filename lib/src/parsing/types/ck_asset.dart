@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
-import '/src/api/ck_local_database_manager.dart';
+import '../../database/ck_local_database_manager.dart';
 import '/src/parsing/ck_field_structure.dart';
 
 /// A representation of a CloudKit asset.
