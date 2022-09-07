@@ -42,7 +42,7 @@ class CKAPIManager
 
     if (shouldFetchWebAuthToken)
     {
-      await managerToInit.fetchWebAuthToken();
+      await managerToInit._fetchWebAuthToken();
     }
   }
 
@@ -124,7 +124,7 @@ class CKAPIManager
     {
       case CKAuthState.success:
         _ckWebAuthToken = authCallback.authToken;
-        await saveWebAuthToken();
+        await _saveWebAuthToken();
         break;
       case CKAuthState.failure:
       case CKAuthState.cancel:
@@ -136,8 +136,7 @@ class CKAPIManager
     return authCallback.state;
   }
 
-  /// Save the locally-stored ckWebAuthToken to [SharedPreferences].
-  Future<void> saveWebAuthToken([String? ckWebAuthToken]) async
+  Future<void> _saveWebAuthToken([String? ckWebAuthToken]) async
   {
     if (_ckWebAuthToken == null && ckWebAuthToken == null) return;
 
@@ -146,8 +145,7 @@ class CKAPIManager
     await prefs.setString(CKConstants.WEB_AUTH_TOKEN_STORAGE_KEY, ckWebAuthToken ?? _ckWebAuthToken!);
   }
 
-  /// Fetch the ckWebAuthToken from [SharedPreferences] into local storage.
-  Future<String?> fetchWebAuthToken() async
+  Future<String?> _fetchWebAuthToken() async
   {
     WidgetsFlutterBinding.ensureInitialized();
     final prefs = await SharedPreferences.getInstance();

@@ -3,7 +3,7 @@ import '/src/ck_constants.dart';
 import '/src/parsing/types/ck_reference.dart';
 import '/src/api/request_models/ck_zone.dart';
 
-/// An annotation to link a local model class field to a CloudKit reference record field.
+/// An annotation to link a local model class reference field to a CloudKit record reference field.
 class CKReferenceFieldAnnotation<T extends Object> extends CKFieldAnnotation
 {
   const CKReferenceFieldAnnotation(String name) : super(name);

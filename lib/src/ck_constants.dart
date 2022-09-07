@@ -71,7 +71,7 @@ class CKDatabase extends StringConstant
   static const SHARED_DATABASE = CKDatabase("shared");
   static const PRIVATE_DATABASE = CKDatabase("private");
 
-  static const databases = [PUBLIC_DATABASE, SHARED_DATABASE, PRIVATE_DATABASE];
+  static const databases = [PUBLIC_DATABASE, PRIVATE_DATABASE, SHARED_DATABASE];
 
   const CKDatabase(String database) : super(database);
 }

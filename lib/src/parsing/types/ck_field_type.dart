@@ -2,7 +2,7 @@ import 'package:reflectable/reflectable.dart';
 
 import '/src/parsing/reflector.dart';
 
-/// Represents the field type for the local field and the CloudKit record field.
+/// Represents the field type for the local field, CloudKit record field, and SQLite field.
 class CKFieldType
 {
   static const STRING_TYPE = CKFieldType("String", "STRING", SQLiteType.TEXT_TYPE);
@@ -72,6 +72,7 @@ class CKFieldType
   }
 }
 
+/// Represents an SQLite field type.
 class SQLiteType
 {
   static const TEXT_TYPE = SQLiteType("TEXT");
@@ -87,7 +88,9 @@ class SQLiteType
   static const REFERENCE_TYPE = SQLiteType("TEXT");
   static const REFERENCE_LIST_TYPE = SQLiteType("TEXT", isList: true);
 
+  /// The base SQLite type as a string.
   final String baseType;
+  /// Whether the SQLite type is a list.
   final bool isList;
 
   const SQLiteType(this.baseType, {this.isList = false});

@@ -1,7 +1,7 @@
 import 'ck_zone.dart';
 import 'ck_query.dart';
 
-/// A container class for the zone ID, result limit, and query information for a CloudKit record query request.
+/// A container class for a CloudKit record query request.
 class CKRecordQueryRequest
 {
   final CKZone _zoneID;

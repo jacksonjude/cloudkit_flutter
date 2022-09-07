@@ -288,7 +288,7 @@ class CKRecordChange<T>
   CKRecordChange(this.localObject, this.objectID, this.changeType, this.recordType);
 }
 
-/// An operation to modify records
+/// An operation to modify records.
 class CKRecordModifyOperation<T extends Object> extends CKPostOperation
 {
   late final CKRecordModifyRequest _recordModifyRequest;
@@ -310,6 +310,7 @@ class CKRecordModifyOperation<T extends Object> extends CKPostOperation
   @override
   Map<String,dynamic>? _getBody() => _recordModifyRequest.toJSON();
 
+  /// Execute the record modify operation.
   @override
   Future<CKOperationCallback> execute() async
   {
@@ -318,7 +319,7 @@ class CKRecordModifyOperation<T extends Object> extends CKPostOperation
   }
 }
 
-/// An operation to create an APNs token
+/// An operation to create an APNS token.
 class CKAPNSCreateTokenOperation extends CKPostOperation
 {
   final CKAPNSEnvironment _apnsEnvironment;
@@ -333,6 +334,7 @@ class CKAPNSCreateTokenOperation extends CKPostOperation
     "apnsEnvironment": _apnsEnvironment.toString()
   };
 
+  /// Execute the create token operation.
   @override
   Future<CKOperationCallback<CKAPNSToken>> execute() async
   {
@@ -344,7 +346,7 @@ class CKAPNSCreateTokenOperation extends CKPostOperation
   }
 }
 
-/// An operation to register an APNs token
+/// An operation to register an APNS token.
 class CKAPNSRegisterTokenOperation extends CKPostOperation
 {
   final CKAPNSToken _token;
@@ -357,6 +359,7 @@ class CKAPNSRegisterTokenOperation extends CKPostOperation
   @override
   Map<String, dynamic>? _getBody() => _token.toJSON();
 
+  /// Execute the register token operation.
   @override
   Future<CKOperationCallback> execute() async
   {

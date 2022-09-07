@@ -1,5 +1,6 @@
 import 'ck_zone.dart';
 
+/// A container class for a CloudKit record modify request.
 class CKRecordModifyRequest
 {
   final List<CKRecordOperation> _operations;
@@ -20,6 +21,7 @@ class CKRecordModifyRequest
   };
 }
 
+/// A container class for a single CloudKit record operation.
 class CKRecordOperation
 {
   final CKRecordOperationType _operationType;
@@ -28,6 +30,7 @@ class CKRecordOperation
 
   CKRecordOperation(this._operationType, this._record, this._recordFields);
 
+  /// Convert the record operation to JSON.
   Map<String, dynamic> toJSON() => {
     'operationType': _operationType.toString(),
     'record': _record,
@@ -35,6 +38,7 @@ class CKRecordOperation
   };
 }
 
+/// A string constant class for record operation types.
 class CKRecordOperationType
 {
   static const CREATE = CKRecordOperationType("create");

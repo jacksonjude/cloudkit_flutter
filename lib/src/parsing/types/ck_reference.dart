@@ -16,7 +16,7 @@ class CKReference<T extends Object>
 
   CKReference(this.referenceUUID, this._database, {CKZone? zoneID}) : _zoneID = zoneID ?? CKZone();
 
-  /// Fetch the referenced object from CloudKit
+  /// Fetch the referenced object from CloudKit.
   Future<T?> fetchCloud() async
   {
     var referenceUUIDFilter = CKFilter(CKConstants.RECORD_NAME_FIELD, CKFieldType.STRING_TYPE, referenceUUID, CKComparator.EQUALS);
@@ -32,7 +32,7 @@ class CKReference<T extends Object>
     return null;
   }
 
-  /// Fetch the referenced object from SQLite
+  /// Fetch the referenced object from SQLite.
   Future<T?> fetch({CKLocalDatabaseManager? manager}) async
   {
     var managerToUse = manager ?? CKLocalDatabaseManager.shared;
@@ -41,6 +41,7 @@ class CKReference<T extends Object>
     return localObject;
   }
 
+  /// Fetch a list of referenced objects from SQLite.
   static Future<List<T>> fetchAll<T extends Object>(List<CKReference<T>> references, {CKLocalDatabaseManager? manager}) async
   {
     List<T> localObjects = [];
@@ -53,14 +54,14 @@ class CKReference<T extends Object>
     return localObjects;
   }
 
-  /// Get a stream for the referenced object from SQLite
+  /// Get a stream for the referenced object from SQLite.
   Stream<T> stream({CKLocalDatabaseManager? manager})
   {
     var managerToUse = manager ?? CKLocalDatabaseManager.shared;
     return managerToUse.createQueryByID<T>(referenceUUID);
   }
 
-  /// Get the cached object
+  /// Get the cached object.
   T? get cache => _cachedObject;
 
   /// Convert the reference to JSON.

@@ -29,7 +29,7 @@ class CKAsset
         downloadURL = json["downloadURL"],
         cachedData = json["cachedData"] != null ? Uint8List.fromList(json["cachedData"].cast<int>()) : null;
 
-  /// Download the asset.
+  /// Fetch the asset.
   Future<Uint8List?> fetchAsset({CKLocalDatabaseManager? manager}) async
   {
     if (cachedData != null) return cachedData;

@@ -17,6 +17,7 @@ import '/src/api/ck_operation.dart';
 import '/src/api/ck_api_manager.dart';
 import 'ck_database_event.dart';
 
+/// The manager for storing CloudKit records in a local SQLite database,
 class CKLocalDatabaseManager
 {
   static const _defaultDatabaseName = "cloudkit_flutter_sync.db";
@@ -49,6 +50,7 @@ class CKLocalDatabaseManager
   StreamSubscription<CKNotification>? _notificationStreamSubscription;
   CKSyncToken? _syncToken;
 
+  /// Initialize the shared local database for the application. Optionally, a custom [CKLocalDatabaseManager] can be passed in.
   static Future<void> initializeDatabase(Map<Type,CKRecordStructure> recordStructures, {CKDatabase? database, CKZone? zone, CKLocalDatabaseManager? manager}) async
   {
     WidgetsFlutterBinding.ensureInitialized();
@@ -97,6 +99,7 @@ class CKLocalDatabaseManager
     managerToInit._syncRecordTypes = recordStructures.keys.toList();
   }
 
+  /// Begin cloud sync for the given APNS environment and [CKAPIManager].
   Future<void> initCloudSync(CKAPNSEnvironment environment, {CKAPIManager? apiManager}) async
   {
     _apiManager = apiManager;
@@ -109,11 +112,12 @@ class CKLocalDatabaseManager
     await syncCloudData();
   }
 
+  /// Sync cloud data for the current zone and sync token.
   Future<void> syncCloudData() async
   {
     var zoneChangesOperation = CKRecordZoneChangesOperation(
       CKDatabase.PRIVATE_DATABASE,
-      zoneID: CKZone("CloudCore"),
+      zoneID: cloudZone,
       syncToken: _syncToken,
       recordTypes: _syncRecordTypes,
       apiManager: _apiManager
@@ -159,6 +163,7 @@ class CKLocalDatabaseManager
     await synchronizeAllEvents();
   }
 
+  /// End cloud sync notifications.
   Future<void> stopCloudSync() async
   {
     await _notificationStreamSubscription?.cancel();
@@ -258,6 +263,7 @@ class CKLocalDatabaseManager
     return rawJSON;
   }
 
+  /// Create a query stream for a record type.
   Stream<List<T>> createQuery<T extends Object>([String? where, List? whereArgs])
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
@@ -266,6 +272,7 @@ class CKLocalDatabaseManager
         .asyncMapToList<T>(_convertFromSQLiteMap);
   }
 
+  /// Create a query stream for a specific record id.
   Stream<T> createQueryByID<T extends Object>(String recordID)
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
@@ -274,18 +281,21 @@ class CKLocalDatabaseManager
         .asyncMapToOne<T>(_convertFromSQLiteMap);
   }
 
+  /// Create a raw query stream for a record type.
   Stream<List<T>> createQueryBySQL<T extends Object>(List<String> tables, String sql, [List? args])
   {
     return _databaseInstance.createRawQuery(tables, sql, args)
         .asyncMapToList<T>(_convertFromSQLiteMap);
   }
 
+  /// Create a raw query stream for a specific record.
   Stream<T> createSingularQueryBySQL<T extends Object>(List<String> tables, String sql, [List? args])
   {
     return _databaseInstance.createRawQuery(tables, sql, args)
         .asyncMapToOne<T>(_convertFromSQLiteMap);
   }
 
+  /// Query a record by id.
   Future<T?> queryByID<T extends Object>(String recordID) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
@@ -296,6 +306,7 @@ class CKLocalDatabaseManager
     return _convertFromSQLiteMap<T>(queryResults[0]);
   }
 
+  /// Query a cached asset for a given checksum.
   Future<Uint8List?> queryAssetCache(String checksum) async
   {
     var queryResults = await queryMapBySQL('SELECT * FROM `$_assetCacheTableName` WHERE checksum = ?', args: [checksum]);
@@ -303,6 +314,7 @@ class CKLocalDatabaseManager
     return queryResults[0]["cache"];
   }
 
+  /// Query the raw sqlite rows in JSON format.
   Future<List<Map<String,dynamic>>> queryMapBySQL(String sql, {List? args, bool copyObjects = true}) async
   {
     var queryResults = await _databaseInstance.rawQuery(sql, args);
@@ -316,6 +328,7 @@ class CKLocalDatabaseManager
     return localObject;
   }
 
+  /// Get a stream for changes on an object.
   Stream<T> streamObject<T extends Object>(T object)
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
@@ -326,6 +339,7 @@ class CKLocalDatabaseManager
         [objectID]);
   }
 
+  /// Get a stream for changes on an object field.
   Stream<V> streamField<U extends Object, V extends Object>(U parentObject, String referenceFieldName)
   {
     var childRecordStructure = CKRecordParser.getRecordStructureFromLocalType(V);
@@ -338,6 +352,7 @@ class CKLocalDatabaseManager
         [parentObjectID]);
   }
 
+  /// Get a stream for changes on a list field.
   Stream<List<V>> streamListField<U extends Object, V extends Object>(U parentObject, String referenceListFieldName, {String? where, List? whereArgs, String? orderBy})
   {
     var childRecordStructure = CKRecordParser.getRecordStructureFromLocalType(V);
@@ -351,6 +366,7 @@ class CKLocalDatabaseManager
         [parentObjectID, ...?whereArgs]);
   }
 
+  /// Insert an object into the database.
   Future<void> insert<T extends Object>(T localObject, {bool shouldUseReplace = false, bool shouldTrackEvent = true, IBriteBatch? batch}) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
@@ -388,6 +404,7 @@ class CKLocalDatabaseManager
     }
   }
 
+  /// Insert a list of objects into the database.
   Future<void> insertAll<T extends Object>(List<T> localObjects, {bool shouldTrackEvents = true}) async
   {
     for (var localObject in localObjects)
@@ -396,11 +413,13 @@ class CKLocalDatabaseManager
     }
   }
 
+  /// Insert an asset cache into the asset cache table.
   Future<void> insertAssetCache(CKFieldPath fieldPath, String checksum, Uint8List cache) async
   {
     await _databaseInstance.execute('REPLACE INTO `$_assetCacheTableName` (fieldPath, checksum, cache) VALUES(?, ?, ?)', [fieldPath.toString(), checksum, cache]);
   }
 
+  /// Update an object in the database.
   Future<void> update<T extends Object>(T updatedLocalObject, {bool shouldTrackEvent = true, IBriteBatch? batch}) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
@@ -421,6 +440,7 @@ class CKLocalDatabaseManager
     }
   }
 
+  /// Delete an object from the database.
   Future<void> delete<T extends Object>(String localObjectID, {T? localObject, bool shouldTrackEvent = true, IBriteBatch? batch}) async
   {
     CKRecordStructure recordStructure;
@@ -468,16 +488,19 @@ class CKLocalDatabaseManager
     }
   }
 
+  /// Create a new database batch.
   IBriteBatch batch()
   {
     return _databaseInstance.batch();
   }
 
+  /// Add a database change event.
   void addEvent(CKDatabaseEvent event)
   {
     _databaseEventHistory.add(event);
   }
 
+  /// Sync all database events.
   Future<void> synchronizeAllEvents()
   {
     return _databaseEventHistory.synchronizeAll();

@@ -5,15 +5,17 @@ import '/src/api/request_models/ck_record_modify_request.dart';
 import '/src/api/ck_operation.dart';
 import 'ck_local_database_manager.dart';
 
+/// A database change event.
 class CKDatabaseEvent<T extends Object>
 {
   final CKDatabaseEventType _eventType;
   final CKDatabaseEventSource _source;
   final String _objectID;
-  T? localObject;
+  T? _localObject;
 
-  CKDatabaseEvent(this._eventType, this._source, this._objectID, [this.localObject]);
+  CKDatabaseEvent(this._eventType, this._source, this._objectID, [this._localObject]);
 
+  /// Sync the database change event to the cloud or local database.
   Future<void> synchronize(CKLocalDatabaseManager databaseManager, [IBriteBatch? batch]) async
   {
     switch (_source)
@@ -28,9 +30,10 @@ class CKDatabaseEvent<T extends Object>
     }
   }
 
+  /// Perform the change on the cloud database.
   Future<void> performOnCloudDatabase(CKLocalDatabaseManager databaseManager) async
   {
-    if (localObject == null) return;
+    if (_localObject == null) return;
 
     CKRecordOperationType operationType;
     switch (_eventType)
@@ -48,23 +51,24 @@ class CKDatabaseEvent<T extends Object>
         break;
     }
 
-    var modifyOperation = CKRecordModifyOperation<T>(databaseManager.cloudDatabase, zoneID: databaseManager.cloudZone, objectsToModify: [Tuple2<T,CKRecordOperationType>(localObject!, operationType)]);
+    var modifyOperation = CKRecordModifyOperation<T>(databaseManager.cloudDatabase, zoneID: databaseManager.cloudZone, objectsToModify: [Tuple2<T,CKRecordOperationType>(_localObject!, operationType)]);
     var responseCallback = await modifyOperation.execute();
     print(responseCallback);
   }
 
+  /// Perform the change on the local database.
   Future<void> performOnLocalDatabase(CKLocalDatabaseManager databaseManager, [IBriteBatch? batch]) async
   {
     switch (_eventType)
     {
       case CKDatabaseEventType.insert:
-        if (localObject == null) return;
-        await databaseManager.insert<T>(localObject!, shouldUseReplace: true, shouldTrackEvent: false, batch: batch);
+        if (_localObject == null) return;
+        await databaseManager.insert<T>(_localObject!, shouldUseReplace: true, shouldTrackEvent: false, batch: batch);
         break;
 
       case CKDatabaseEventType.update:
-        if (localObject == null) return;
-        await databaseManager.update<T>(localObject!, shouldTrackEvent: false, batch: batch);
+        if (_localObject == null) return;
+        await databaseManager.update<T>(_localObject!, shouldTrackEvent: false, batch: batch);
         break;
 
       case CKDatabaseEventType.delete:
@@ -74,6 +78,7 @@ class CKDatabaseEvent<T extends Object>
   }
 }
 
+/// The change type of a database event.
 enum CKDatabaseEventType
 {
   insert,
@@ -81,12 +86,14 @@ enum CKDatabaseEventType
   delete
 }
 
+/// The source of a database event.
 enum CKDatabaseEventSource
 {
   cloud,
   local
 }
 
+/// A list of database events.
 class CKDatabaseEventList
 {
   final List<CKDatabaseEvent> _l;
@@ -95,12 +102,14 @@ class CKDatabaseEventList
 
   bool isSyncing = false;
 
+  /// Add a database event.
   void add(CKDatabaseEvent element)
   {
     _l.add(element);
     _cleanEvents();
   }
 
+  /// Sync all database events.
   Future<void> synchronizeAll() async
   {
     if (isSyncing) return;
@@ -139,7 +148,7 @@ class CKDatabaseEventList
           var updateEvents = this._l.where((testEvent) => testEvent._objectID == event._objectID && testEvent._eventType == CKDatabaseEventType.update);
           if (updateEvents.isNotEmpty)
           {
-            event.localObject = updateEvents.last.localObject;
+            event._localObject = updateEvents.last._localObject;
             updateEvents.forEach((updateEvent) {
               this._l.remove(updateEvent);
             });
@@ -150,7 +159,7 @@ class CKDatabaseEventList
           var updateEvents = this._l.where((testEvent) => testEvent != event && testEvent._objectID == event._objectID && testEvent._eventType == CKDatabaseEventType.update);
           if (updateEvents.isNotEmpty)
           {
-            event.localObject = updateEvents.last.localObject;
+            event._localObject = updateEvents.last._localObject;
             updateEvents.forEach((updateEvent) {
               this._l.remove(updateEvent);
             });
