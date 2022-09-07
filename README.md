@@ -140,7 +140,7 @@ class Gender extends CKCustomFieldType<int>
 flutter pub run build_runner build lib
 ```
 - Call `initializeReflectable()` (found within generated `*.reflectable.dart` files) at the start of your app before any other library calls are made.
-  -Call the [CKRecordParser.createRecordStructures](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_init/CKRecordParser/createRecordStructures.html) function, listing the direct types of the local model classes within the list:
+- Call the [CKRecordParser.createRecordStructures](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_init/CKRecordParser/createRecordStructures.html) function, listing the direct types of the local model classes within the list:
 ```dart
 CKRecordParser.createRecordStructures(List<Type> classTypes)
 ```
