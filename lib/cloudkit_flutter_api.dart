@@ -10,6 +10,7 @@ export 'src/api/request_models/ck_query.dart';
 export 'src/api/request_models/ck_filter.dart';
 export 'src/api/request_models/ck_sort_descriptor.dart';
 export 'src/api/request_models/ck_sync_token.dart';
+export 'src/api/request_models/ck_zone_operation.dart';
 export 'src/api/request_models/ck_subscription_operation.dart';
 export 'src/api/request_models/ck_record_change.dart';
 export 'src/api/ck_notification_manager.dart';

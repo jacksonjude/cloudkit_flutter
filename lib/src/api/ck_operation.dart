@@ -1,3 +1,4 @@
+import 'package:cloudkit_flutter/src/api/request_models/ck_zone_operation.dart';
 import 'package:tuple/tuple.dart';
 import 'package:quiver/iterables.dart';
 
@@ -313,7 +314,84 @@ class CKRecordModifyOperation extends CKPostOperation
   }
 }
 
-mixin CKSubscriptionsHandler
+mixin _CKZoneHandler
+{
+  Future<CKOperationCallback<List<CKZone>>> parseZones(CKOperationCallback zoneListCallback) async
+  {
+    List zonesJSON = zoneListCallback.response["zones"];
+    List<CKZone> zones = zonesJSON.expand((zoneJSON) {
+      if (zoneJSON["serverErrorCode"] == null) return [CKZone(zoneJSON["zoneID"]["zoneName"])];
+
+      print(zoneJSON["serverErrorCode"] + " -- " + zoneJSON["reason"]);
+      return <CKZone>[];
+    }).toList();
+    return CKOperationCallback(CKOperationState.success, response: zones);
+  }
+}
+
+class CKZoneFetchOperation extends CKGetOperation with _CKZoneHandler
+{
+  CKZoneFetchOperation(CKDatabase database, {CKAPIManager? apiManager}) : super(CKAPIModule.DATABASE, database: database, apiManager: apiManager);
+
+  @override
+  String _getAPIPath() => "zones/list";
+
+  /// Execute the zone fetch operation.
+  @override
+  Future<CKOperationCallback<List<CKZone>>> execute() async
+  {
+    CKOperationCallback zoneListCallback = await super.execute();
+    return parseZones(zoneListCallback);
+  }
+}
+
+class CKZoneLookupOperation extends CKPostOperation with _CKZoneHandler
+{
+  List<CKZone> zones;
+
+  CKZoneLookupOperation(this.zones, CKDatabase database, {CKAPIManager? apiManager}) : super(CKAPIModule.DATABASE, database: database, apiManager: apiManager);
+
+  @override
+  String _getAPIPath() => "zones/lookup";
+
+  @override
+  Map<String, dynamic> _getBody() => {
+    "zones": zones.map((zone) => zone.toJSON()).toList()
+  };
+
+  /// Execute the zone fetch operation.
+  @override
+  Future<CKOperationCallback<List<CKZone>>> execute() async
+  {
+    CKOperationCallback zoneListCallback = await super.execute();
+    return parseZones(zoneListCallback);
+  }
+}
+
+class CKZoneModifyOperation extends CKPostOperation with _CKZoneHandler
+{
+  List<CKZoneOperation> operations;
+
+  CKZoneModifyOperation(this.operations, CKDatabase database, {CKAPIManager? apiManager}) : super(CKAPIModule.DATABASE, database: database, apiManager: apiManager);
+
+  @override
+  String _getAPIPath() => "zones/modify";
+
+  @override
+  Map<String, dynamic> _getBody() => {
+    "operations": operations.map((operation) => operation.toJSON()).toList()
+  };
+
+  /// Execute the zone fetch operation.
+  @override
+  Future<CKOperationCallback<List<CKZone>>> execute() async
+  {
+    CKOperationCallback zoneListCallback = await super.execute();
+    return parseZones(zoneListCallback);
+  }
+}
+
+mixin _CKSubscriptionHandler
 {
   Future<CKOperationCallback<List<CKSubscription>>> parseSubscriptions(CKOperationCallback subscriptionListCallback) async
   {
@@ -324,14 +402,14 @@ mixin CKSubscriptionsHandler
       print(subscriptionJSON["serverErrorCode"] + " -- " + subscriptionJSON["reason"]);
       return <CKSubscription>[];
     }).toList();
-    return CKOperationCallback(CKOperationState.success, response: subscriptions);
+    return CKOperationCallback<List<CKSubscription>>(CKOperationState.success, response: subscriptions);
   }
 }
 
 /// An operation to fetch subscriptions.
-class CKFetchSubscriptionsOperation extends CKGetOperation with CKSubscriptionsHandler
+class CKSubscriptionFetchOperation extends CKGetOperation with _CKSubscriptionHandler
 {
-  CKFetchSubscriptionsOperation(CKDatabase database, {CKAPIManager? apiManager}) : super(CKAPIModule.DATABASE, database: database, apiManager: apiManager);
+  CKSubscriptionFetchOperation(CKDatabase database, {CKAPIManager? apiManager}) : super(CKAPIModule.DATABASE, database: database, apiManager: apiManager);
 
   @override
   String _getAPIPath() => "subscriptions/list";
@@ -346,11 +424,11 @@ class CKFetchSubscriptionsOperation extends CKGetOperation with CKSubscriptionsH
 }
 
 /// An operation to fetch subscriptions by id.
-class CKLookupSubscriptionsOperation extends CKPostOperation with CKSubscriptionsHandler
+class CKSubscriptionLookupOperation extends CKPostOperation with _CKSubscriptionHandler
 {
   List<String> subscriptionIDs;
 
-  CKLookupSubscriptionsOperation(this.subscriptionIDs, CKDatabase database, {CKAPIManager? apiManager}) : super(CKAPIModule.DATABASE, database: database, apiManager: apiManager);
+  CKSubscriptionLookupOperation(this.subscriptionIDs, CKDatabase database, {CKAPIManager? apiManager}) : super(CKAPIModule.DATABASE, database: database, apiManager: apiManager);
 
   @override
   String _getAPIPath() => "subscriptions/lookup";
@@ -370,11 +448,11 @@ class CKLookupSubscriptionsOperation extends CKPostOperation with CKSubscription
 }
 
 /// An operation to modify subscriptions.
-class CKModifySubscriptionsOperation extends CKPostOperation with CKSubscriptionsHandler
+class CKSubscriptionModifyOperation extends CKPostOperation with _CKSubscriptionHandler
 {
   final List<CKSubscriptionOperation> operations;
 
-  CKModifySubscriptionsOperation(this.operations, CKDatabase database, {CKAPIManager? apiManager}) : super(CKAPIModule.DATABASE, database: database, apiManager: apiManager);
+  CKSubscriptionModifyOperation(this.operations, CKDatabase database, {CKAPIManager? apiManager}) : super(CKAPIModule.DATABASE, database: database, apiManager: apiManager);
 
   @override
   String _getAPIPath() => "subscriptions/modify";

@@ -12,6 +12,7 @@ import '/src/parsing/types/ck_field_type.dart';
 import '/src/ck_constants.dart';
 import '/src/api/request_models/ck_zone.dart';
 import '/src/api/request_models/ck_sync_token.dart';
+import '/src/api/request_models/ck_zone_operation.dart';
 import '/src/api/request_models/ck_subscription_operation.dart';
 import '/src/api/request_models/ck_record_change.dart';
 import '/src/api/ck_notification_manager.dart';
@@ -107,15 +108,27 @@ class CKLocalDatabaseManager
   {
     _apiManager = apiManager;
 
-    var subscriptionIDToCreate = subscriptionID ?? ("${cloudZone.toJSON()["zoneName"]}-${cloudDatabase.toString()}");
-    var lookupSubscriptionOperation = CKLookupSubscriptionsOperation([subscriptionIDToCreate], cloudDatabase);
+    var lookupZoneOperation = CKZoneLookupOperation([cloudZone], cloudDatabase);
+    var lookupZoneOperationCallback = await lookupZoneOperation.execute();
+
+    var shouldCreateZone = (lookupZoneOperationCallback.response?.length ?? 0) == 0;
+    if (shouldCreateZone)
+    {
+      var createZoneOperation = CKZoneModifyOperation([
+        CKZoneOperation(cloudZone, CKZoneOperationType.CREATE)
+      ], cloudDatabase);
+      await createZoneOperation.execute();
+    }
+
+    subscriptionID ??= ("${cloudZone.toJSON()["zoneName"]}-${cloudDatabase.toString()}");
+    var lookupSubscriptionOperation = CKSubscriptionLookupOperation([subscriptionID], cloudDatabase);
     var lookupSubscriptionCallback = await lookupSubscriptionOperation.execute();
 
     var shouldCreateSubscription = (lookupSubscriptionCallback.response?.length ?? 0) == 0;
     if (shouldCreateSubscription)
     {
-      var syncZoneSubscription = CKZoneSubscription(subscriptionIDToCreate, cloudZone);
-      var createSubscriptionsOperation = CKModifySubscriptionsOperation([
+      var syncZoneSubscription = CKZoneSubscription(subscriptionID, cloudZone);
+      var createSubscriptionsOperation = CKSubscriptionModifyOperation([
         CKSubscriptionOperation(CKSubscriptionOperationType.CREATE, syncZoneSubscription)
       ], cloudDatabase);
       await createSubscriptionsOperation.execute();
