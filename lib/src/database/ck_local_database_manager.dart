@@ -12,9 +12,11 @@ import '/src/parsing/types/ck_field_type.dart';
 import '/src/ck_constants.dart';
 import '/src/api/request_models/ck_zone.dart';
 import '/src/api/request_models/ck_sync_token.dart';
+import '/src/api/request_models/ck_subscription_operation.dart';
 import '/src/api/ck_notification_manager.dart';
 import '/src/api/ck_operation.dart';
 import '/src/api/ck_api_manager.dart';
+import '/src/api/ck_subscription.dart';
 import 'ck_database_event.dart';
 
 /// The manager for storing CloudKit records in a local SQLite database,
@@ -100,9 +102,23 @@ class CKLocalDatabaseManager
   }
 
   /// Begin cloud sync for the given APNS environment and [CKAPIManager].
-  Future<void> initCloudSync(CKAPNSEnvironment environment, {CKAPIManager? apiManager}) async
+  Future<void> initCloudSync(CKAPNSEnvironment environment, {String? subscriptionID, CKAPIManager? apiManager}) async
   {
     _apiManager = apiManager;
+
+    var subscriptionIDToCreate = subscriptionID ?? ("${cloudZone.toJSON()["zoneName"]}-${cloudDatabase.toString()}");
+    var lookupSubscriptionOperation = CKLookupSubscriptionsOperation([subscriptionIDToCreate], cloudDatabase);
+    var lookupSubscriptionCallback = await lookupSubscriptionOperation.execute();
+
+    var shouldCreateSubscription = (lookupSubscriptionCallback.response?.length ?? 0) == 0;
+    if (shouldCreateSubscription)
+    {
+      var syncZoneSubscription = CKZoneSubscription(subscriptionIDToCreate, cloudZone);
+      var createSubscriptionsOperation = CKModifySubscriptionsOperation([
+        CKSubscriptionOperation(CKSubscriptionOperationType.CREATE, syncZoneSubscription)
+      ], cloudDatabase);
+      await createSubscriptionsOperation.execute();
+    }
 
     var notificationStream = await CKNotificationManager.shared.registerForRemoteNotifications(environment, apiManager: _apiManager);
     _notificationStreamSubscription = notificationStream.listen((notification) {

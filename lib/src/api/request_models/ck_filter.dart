@@ -23,6 +23,14 @@ class CKFilter
     'fieldValue': _fieldValueDictionary,
     'distance': _distance
   };
+
+  static CKFilter fromJSON(Map<String, dynamic> json) => CKFilter(
+    json['systemFieldName'] ?? json['fieldName'],
+    CKFieldType.fromRecordType(json['fieldValue']['type']),
+    json['fieldValue']['value'],
+    CKComparator.comparators.firstWhere((comparator) => comparator._comparatorString == json['comparator']),
+    distance: json['distance']
+  );
 }
 
 /// A container class for the types of CloudKit comparators used in [CKFilter] objects
@@ -48,6 +56,29 @@ class CKComparator
   static const NOT_LIST_MEMBER_BEGINS_WITH = CKComparator("NOT_LIST_MEMBER_BEGINS_WITH");
   static const LIST_CONTAINS_ALL = CKComparator("LIST_CONTAINS_ALL");
   static const NOT_LIST_CONTAINS_ALL = CKComparator("NOT_LIST_CONTAINS_ALL");
+
+  static const comparators = [
+    EQUALS,
+    NOT_EQUALS,
+    LESS_THAN,
+    LESS_THAN_OR_EQUALS,
+    GREATER_THAN,
+    GREATER_THAN_OR_EQUALS,
+    NEAR,
+    CONTAINS_ALL_TOKENS,
+    IN,
+    NOT_IN,
+    CONTAINS_ANY_TOKENS,
+    LIST_CONTAINS,
+    NOT_LIST_CONTAINS,
+    NOT_LIST_CONTAINS_ANY,
+    BEGINS_WITH,
+    NOT_BEGINS_WITH,
+    LIST_MEMBER_BEGINS_WITH,
+    NOT_LIST_MEMBER_BEGINS_WITH,
+    LIST_CONTAINS_ALL,
+    NOT_LIST_CONTAINS_ALL
+  ];
 
   final String _comparatorString;
 

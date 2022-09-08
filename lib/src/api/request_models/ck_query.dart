@@ -16,4 +16,17 @@ class CKQuery
     'filterBy': (_filterBy ?? []).map((filter) => filter.toJSON()).toList(),
     'sortBy': (_sortBy ?? []).map((sort) => sort.toJSON()).toList()
   };
+
+  static CKQuery fromJSON(Map<String, dynamic> json)
+  {
+    String recordType = json["recordType"];
+    List? filtersJSON = json["filterBy"];
+    List? sortByJSON = json["sortBy"];
+
+    return CKQuery(
+      recordType,
+      filterBy: filtersJSON?.map((json) => CKFilter.fromJSON(json)).toList(),
+      sortBy: sortByJSON?.map((json) => CKSortDescriptor.fromJSON(json)).toList()
+    );
+  }
 }

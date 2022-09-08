@@ -11,4 +11,9 @@ class CKSortDescriptor
     'fieldName': _fieldName,
     'ascending': _ascending
   };
+
+  static CKSortDescriptor fromJSON(Map<String, dynamic> json) => CKSortDescriptor(
+    json['fieldName'],
+    json['ascending']
+  );
 }

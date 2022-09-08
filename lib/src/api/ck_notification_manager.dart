@@ -11,6 +11,7 @@ import '/src/ck_constants.dart';
 import 'ck_api_manager.dart';
 import 'ck_operation.dart';
 import 'request_models/ck_zone.dart';
+import 'ck_subscription.dart';
 
 /// The manager for registering and listening to APNS notifications
 class CKNotificationManager
@@ -184,8 +185,8 @@ class CKAPNSEnvironment extends StringConstant
 /// A representation of received CloudKit notification JSON objects.
 class CKNotification
 {
-  /// The type of the notification (query or zone).
-  CKNotificationType type;
+  /// The subscription type of the notification (query or zone).
+  CKSubscriptionType type;
   /// The notification id.
   String id;
   /// The CloudKit container of the notification.
@@ -208,14 +209,14 @@ class CKNotification
     {
       return CKQueryNotification(notificationID, containerID, ckInfo["qry"]);
     }
-    return CKNotification(CKNotificationType.UNKNOWN, notificationID, containerID);
+    return CKNotification(CKSubscriptionType.UNKNOWN, notificationID, containerID);
   }
 }
 
 /// A representation of query-type CloudKit notification
 class CKQueryNotification extends CKNotification
 {
-  CKQueryNotification(String id, String container, Map<String, dynamic> queryInfo) : super(CKNotificationType.QUERY, id, container);
+  CKQueryNotification(String id, String container, Map<String, dynamic> queryInfo) : super(CKSubscriptionType.QUERY, id, container);
 }
 
 /// A representation of zone-type CloudKit notification
@@ -232,15 +233,5 @@ class CKZoneNotification extends CKNotification
         zoneID = CKZone(zoneInfo["zid"]),
         database = CKDatabase.databases[zoneInfo["dbs"]],
         subscriptionID = zoneInfo["sid"],
-        super(CKNotificationType.ZONE, id, container);
-}
-
-/// A string constant class for notification types.
-class CKNotificationType extends StringConstant
-{
-  static const ZONE = CKNotificationType("ZONE");
-  static const QUERY = CKNotificationType("QUERY");
-  static const UNKNOWN = CKNotificationType("UNKNOWN");
-
-  const CKNotificationType(String notificationType) : super(notificationType);
+        super(CKSubscriptionType.ZONE, id, container);
 }
