@@ -1,6 +1,7 @@
 import '/src/ck_constants.dart';
 import '/src/parsing/ck_record_parser.dart';
 import '/src/database/ck_database_event.dart';
+import '/src/api/request_models/ck_record_change.dart';
 
 /// An annotation to link a local model class to a CloudKit record type.
 class CKRecordTypeAnnotation<T extends Object>
@@ -10,9 +11,9 @@ class CKRecordTypeAnnotation<T extends Object>
 
   const CKRecordTypeAnnotation(this.type);
 
-  CKDatabaseEvent<T> createEvent(String localObjectID, CKDatabaseEventType type, {T? localObject})
+  CKDatabaseEvent<T> createCloudEvent(CKRecordChange recordChange)
   {
-    return CKDatabaseEvent<T>(type, CKDatabaseEventSource.cloud, localObjectID, localObject);
+    return CKDatabaseEvent<T>(recordChange, CKDatabaseEventSource.cloud);
   }
 
   T recordToLocalObject(dynamic recordMap, CKDatabase database)

@@ -1,3 +1,4 @@
+import 'ck_record_change.dart';
 import 'ck_zone.dart';
 
 /// A container class for a CloudKit record modify request.
@@ -36,23 +37,4 @@ class CKRecordOperation
     'record': _record,
     'desiredKeys': _recordFields
   };
-}
-
-/// A string constant class for record operation types.
-class CKRecordOperationType
-{
-  static const CREATE = CKRecordOperationType("create");
-  static const UPDATE = CKRecordOperationType("update");
-  static const FORCE_UPDATE = CKRecordOperationType("forceUpdate");
-  static const REPLACE = CKRecordOperationType("replace");
-  static const FORCE_REPLACE = CKRecordOperationType("forceReplace");
-  static const DELETE = CKRecordOperationType("delete");
-  static const FORCE_DELETE = CKRecordOperationType("forceDelete");
-
-  final String _operation;
-
-  const CKRecordOperationType(this._operation);
-
-  @override
-  String toString() => _operation;
 }

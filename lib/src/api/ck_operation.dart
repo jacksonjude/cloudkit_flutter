@@ -14,6 +14,7 @@ import 'request_models/ck_sort_descriptor.dart';
 import 'request_models/ck_sync_token.dart';
 import 'request_models/ck_record_modify_request.dart';
 import 'request_models/ck_subscription_operation.dart';
+import 'request_models/ck_record_change.dart';
 import '/src/parsing/ck_record_parser.dart';
 import '/src/ck_constants.dart';
 
@@ -149,18 +150,12 @@ class CKRecordQueryOperation<T> extends CKPostOperation
   }
 }
 
-enum CKRecordChangeType
-{
-  update,
-  delete
-}
-
 /// An operation to fetch record zone changes.
 class CKRecordZoneChangesOperation<T> extends CKPostOperation
 {
   final CKRecordZoneChangesRequest _recordZoneChangesRequest;
   CKSyncToken? _currentSyncToken;
-  List<CKRecordChangeType>? _changeTypes;
+  List<CKRecordOperationType>? _changeTypes;
   bool _shouldPreloadAssets;
 
   CKRecordZoneChangesOperation(CKDatabase database, {CKRecordZoneChangesRequest? zoneChangesRequest, CKZone? zoneID, CKSyncToken? syncToken, List<Type>? recordTypes, int? resultsLimit, List<String>? recordFields, bool? preloadAssets, CKAPIManager? apiManager}) :
@@ -215,13 +210,14 @@ class CKRecordZoneChangesOperation<T> extends CKPostOperation
       });
     }
 
-    _changeTypes = records.map((recordJSON) => !(recordJSON["deleted"] as bool) ? CKRecordChangeType.update : CKRecordChangeType.delete).toList();
+    _changeTypes = records.map((recordJSON) => !(recordJSON["deleted"] as bool) ? CKRecordOperationType.UPDATE : CKRecordOperationType.DELETE).toList();
 
-    var rawRecordChanges = zip([records, _changeTypes!]).map((recordChange) => Tuple2<dynamic, CKRecordChangeType>.fromList(recordChange)).toList();
+    var rawRecordChanges = zip([records, _changeTypes!]).map((recordChange) => Tuple2<dynamic, CKRecordOperationType>.fromList(recordChange)).toList();
 
     List<T?> newLocalObjects = [];
     List<String> recordIDs = [];
     List<Type> correspondingRecordTypes = [];
+    List<String?> recordChangeTags = [];
 
     for (var recordChange in rawRecordChanges)
     {
@@ -229,20 +225,22 @@ class CKRecordZoneChangesOperation<T> extends CKPostOperation
       var changeType = recordChange.item2;
 
       recordIDs.add(recordMap[CKConstants.RECORD_NAME_FIELD]);
+      recordChangeTags.add(recordMap[CKConstants.RECORD_CHANGE_TAG_FIELD]);
 
       T? newObject;
       if (fetchingMultipleRecordTypes)
       {
         switch (changeType)
         {
-          case CKRecordChangeType.update:
+          case CKRecordOperationType.CREATE:
+          case CKRecordOperationType.UPDATE:
             String recordType = recordMap[CKConstants.RECORD_TYPE_FIELD];
             newObject = recordStructures[recordType]!.recordTypeAnnotation!.recordToLocalObject(recordMap, _database!) as T;
             if (_shouldPreloadAssets) await recordStructures[recordType]!.recordTypeAnnotation!.preloadAssets(newObject!);
             correspondingRecordTypes.add(recordStructures[recordType]!.localType);
             break;
 
-          case CKRecordChangeType.delete:
+          case CKRecordOperationType.DELETE:
             correspondingRecordTypes.add(dynamic);
             break;
         }
@@ -251,13 +249,14 @@ class CKRecordZoneChangesOperation<T> extends CKPostOperation
       {
         switch (changeType)
         {
-          case CKRecordChangeType.update:
+          case CKRecordOperationType.CREATE:
+          case CKRecordOperationType.UPDATE:
             newObject = CKRecordParser.recordToLocalObject<T>(recordMap as Map<String,dynamic>, _database!);
             if (_shouldPreloadAssets) await CKRecordParser.preloadAssets<T>(newObject!);
             correspondingRecordTypes.add(T);
             break;
 
-          case CKRecordChangeType.delete:
+          case CKRecordOperationType.DELETE:
             correspondingRecordTypes.add(T);
             break;
         }
@@ -265,8 +264,8 @@ class CKRecordZoneChangesOperation<T> extends CKPostOperation
       newLocalObjects.add(newObject);
     }
 
-    var recordChanges = zip([newLocalObjects, recordIDs, _changeTypes!, correspondingRecordTypes])
-        .map((List recordChangeTuple) => CKRecordChange<T>(recordChangeTuple[0], recordChangeTuple[1], recordChangeTuple[2], recordChangeTuple[3]))
+    var recordChanges = zip([recordIDs, _changeTypes!, correspondingRecordTypes, newLocalObjects, recordChangeTags])
+        .map((List recordChangeTuple) => CKRecordChange<T>(recordChangeTuple[0], recordChangeTuple[1], recordChangeTuple[2], localObject: recordChangeTuple[3], recordChangeTag: recordChangeTuple[4]))
         .toList();
 
     if (zoneChangesResponse["moreComing"])
@@ -280,28 +279,17 @@ class CKRecordZoneChangesOperation<T> extends CKPostOperation
   }
 }
 
-class CKRecordChange<T>
-{
-  T? localObject;
-  String objectID;
-  CKRecordChangeType changeType;
-  Type recordType;
-
-  CKRecordChange(this.localObject, this.objectID, this.changeType, this.recordType);
-}
-
 /// An operation to modify records.
-class CKRecordModifyOperation<T extends Object> extends CKPostOperation
+class CKRecordModifyOperation extends CKPostOperation
 {
   late final CKRecordModifyRequest _recordModifyRequest;
 
-  CKRecordModifyOperation(CKDatabase database, {CKRecordModifyRequest? modifyRequest, List<Tuple2<T,CKRecordOperationType>>? objectsToModify, CKZone? zoneID, bool? atomic, List<String>? recordFields, bool? numbersAsStrings, CKAPIManager? apiManager}) : super(CKAPIModule.DATABASE, database: database, apiManager: apiManager)
+  CKRecordModifyOperation(CKDatabase database, {CKRecordModifyRequest? modifyRequest, List<CKRecordChange>? recordChanges, CKZone? zoneID, bool? atomic, List<String>? recordFields, bool? numbersAsStrings, CKAPIManager? apiManager}) : super(CKAPIModule.DATABASE, database: database, apiManager: apiManager)
   {
-    this._recordModifyRequest = modifyRequest ?? CKRecordModifyRequest((objectsToModify ?? []).map((objectOperationPair) {
-      var object = objectOperationPair.item1;
-      var operationType = objectOperationPair.item2;
+    this._recordModifyRequest = modifyRequest ?? CKRecordModifyRequest((recordChanges ?? []).map((recordChange) {
+      var recordJSON = recordChange.recordJSON!;
+      var operationType = recordChange.operationType;
 
-      var recordJSON = CKRecordParser.localObjectToRecord<T>(object);
       return CKRecordOperation(operationType, recordJSON, null);
     }).toList(), zoneID ?? CKZone(), atomic, recordFields, numbersAsStrings);
   }
@@ -314,10 +302,14 @@ class CKRecordModifyOperation<T extends Object> extends CKPostOperation
 
   /// Execute the record modify operation.
   @override
-  Future<CKOperationCallback> execute() async
+  Future<CKOperationCallback<List<CKRecordMetadata>>> execute() async
   {
     CKOperationCallback recordModifyCallback = await super.execute();
-    return recordModifyCallback;
+    List modifiedRecords = recordModifyCallback.response["records"];
+    List<CKRecordMetadata> recordsMetadata = modifiedRecords.map((recordJSON) =>
+      CKRecordMetadata(recordJSON[CKConstants.RECORD_NAME_FIELD], recordType: recordJSON[CKConstants.RECORD_TYPE_FIELD], changeTag: recordJSON[CKConstants.RECORD_CHANGE_TAG_FIELD])
+    ).toList();
+    return CKOperationCallback<List<CKRecordMetadata>>(recordModifyCallback.state, response: recordsMetadata);
   }
 }
 

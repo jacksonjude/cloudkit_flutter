@@ -13,6 +13,7 @@ import '/src/ck_constants.dart';
 import '/src/api/request_models/ck_zone.dart';
 import '/src/api/request_models/ck_sync_token.dart';
 import '/src/api/request_models/ck_subscription_operation.dart';
+import '/src/api/request_models/ck_record_change.dart';
 import '/src/api/ck_notification_manager.dart';
 import '/src/api/ck_operation.dart';
 import '/src/api/ck_api_manager.dart';
@@ -78,7 +79,7 @@ class CKLocalDatabaseManager
             return '`${fieldStructure.ckName}` ${fieldStructure.type.sqlite.baseType}${fieldStructure.ckName == CKConstants.RECORD_NAME_FIELD ? " PRIMARY KEY" : ""}';
           }).join(", ");
 
-          await db.execute('CREATE TABLE `${recordStructure.ckRecordType}` ($tableColumnDefinitions)');
+          await db.execute('CREATE TABLE `${recordStructure.ckRecordType}` ($tableColumnDefinitions, `${CKConstants.RECORD_CHANGE_TAG_FIELD}` TEXT)');
 
           var listFields = recordStructure.fields.where((fieldStructure) {
             return fieldStructure.type.sqlite.isList;
@@ -140,36 +141,22 @@ class CKLocalDatabaseManager
     );
     var changesOperationCallback = await zoneChangesOperation.execute();
 
-    var groupedChanges = changesOperationCallback.recordChanges.groupBy((recordChange) => recordChange.recordType);
+    var groupedChanges = changesOperationCallback.recordChanges.groupBy((recordChange) => recordChange.recordMetadata.localType);
     groupedChanges.forEach((recordType, recordChanges) {
       if (recordType != dynamic)
       {
-        var recordStructure = CKRecordParser.getRecordStructureFromLocalType(recordType);
+        var recordStructure = CKRecordParser.getRecordStructureFromLocalType(recordType!);
         var recordTypeAnnotation = recordStructure.recordTypeAnnotation!;
 
         recordChanges.forEach((recordChange) {
-          var objectID = CKRecordParser.getIDFromLocalObject(recordChange.localObject, recordStructure);
-
-          CKDatabaseEventType databaseEventType;
-          switch (recordChange.changeType)
-          {
-            case CKRecordChangeType.update:
-              databaseEventType = CKDatabaseEventType.insert;
-              break;
-
-            case CKRecordChangeType.delete:
-              databaseEventType = CKDatabaseEventType.delete;
-              break;
-          }
-
-          addEvent(recordTypeAnnotation.createEvent(objectID, databaseEventType, localObject: recordChange.localObject));
+          addEvent(recordTypeAnnotation.createCloudEvent(recordChange));
         });
       }
       else
       {
-        recordChanges.removeWhere((recordChange) => recordChange.changeType != CKRecordChangeType.delete);
+        recordChanges.removeWhere((recordChange) => recordChange.operationType != CKRecordOperationType.DELETE);
         recordChanges.forEach((recordChange) {
-          addEvent(CKDatabaseEvent(CKDatabaseEventType.delete, CKDatabaseEventSource.cloud, recordChange.objectID));
+          addEvent(CKDatabaseEvent(recordChange, CKDatabaseEventSource.cloud));
         });
       }
     });
@@ -312,9 +299,9 @@ class CKLocalDatabaseManager
   }
 
   /// Query a record by id.
-  Future<T?> queryByID<T extends Object>(String recordID) async
+  Future<T?> queryByID<T extends Object>(String recordID, {CKRecordStructure? recordStructure}) async
   {
-    var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
+    recordStructure ??= CKRecordParser.getRecordStructureFromLocalType(T);
 
     var queryResults = await _databaseInstance.query(recordStructure.ckRecordType, where: '${CKConstants.RECORD_NAME_FIELD} = ?', whereArgs: [recordID]);
     if (queryResults.length == 0) return null;
@@ -328,6 +315,15 @@ class CKLocalDatabaseManager
     var queryResults = await queryMapBySQL('SELECT * FROM `$_assetCacheTableName` WHERE checksum = ?', args: [checksum]);
     if (queryResults.length == 0) return null;
     return queryResults[0]["cache"];
+  }
+
+  /// Check if the changeTag for a given metadata is equal to the one in the database.
+  Future<bool> isChangeTagEqual(CKRecordMetadata metadata) async
+  {
+    if (metadata.recordType == null) return false;
+    var queryResults = await queryMapBySQL('SELECT `${CKConstants.RECORD_CHANGE_TAG_FIELD}` FROM `${metadata.recordType}` WHERE `${CKConstants.RECORD_NAME_FIELD}` = ?', args: [metadata.id]);
+    if (queryResults.length == 0) return false;
+    return queryResults[0][CKConstants.RECORD_CHANGE_TAG_FIELD] == metadata.changeTag;
   }
 
   /// Query the raw sqlite rows in JSON format.
@@ -383,12 +379,13 @@ class CKLocalDatabaseManager
   }
 
   /// Insert an object into the database.
-  Future<void> insert<T extends Object>(T localObject, {bool shouldUseReplace = false, bool shouldTrackEvent = true, IBriteBatch? batch}) async
+  Future<void> insert<T extends Object>(T localObject, {String? recordChangeTag, bool shouldUseReplace = false, bool shouldTrackEvent = true, IBriteBatch? batch}) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
     Map<String,dynamic> simpleJSON = CKRecordParser.localObjectToSimpleJSON<T>(localObject);
     var formattedJSON = await _formatForSQLite<T>(simpleJSON, batch: batch);
+    if (recordChangeTag != null) formattedJSON[CKConstants.RECORD_CHANGE_TAG_FIELD] = recordChangeTag;
 
     var objectID = simpleJSON[CKConstants.RECORD_NAME_FIELD];
     var tableName = recordStructure.ckRecordType;
@@ -412,10 +409,8 @@ class CKLocalDatabaseManager
     if (shouldTrackEvent)
     {
       addEvent(CKDatabaseEvent<T>(
-        CKDatabaseEventType.insert,
-        CKDatabaseEventSource.local,
-        objectID,
-        localObject
+        CKRecordChange<T>(objectID, CKRecordOperationType.CREATE, T, localObject: localObject),
+        CKDatabaseEventSource.local
       ));
     }
   }
@@ -436,28 +431,33 @@ class CKLocalDatabaseManager
   }
 
   /// Update an object in the database.
-  Future<void> update<T extends Object>(T updatedLocalObject, {bool shouldTrackEvent = true, IBriteBatch? batch}) async
+  Future<void> update<T extends Object>(T updatedLocalObject, {String? recordChangeTag, bool shouldTrackEvent = true, IBriteBatch? batch}) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
     var updatedLocalObjectJSON = CKRecordParser.localObjectToSimpleJSON<T>(updatedLocalObject);
-    var formattedJSON = await _formatForSQLite(updatedLocalObjectJSON, batch: batch);
+    var formattedJSON = await _formatForSQLite<T>(updatedLocalObjectJSON, batch: batch);
+    if (recordChangeTag != null) formattedJSON[CKConstants.RECORD_CHANGE_TAG_FIELD] = recordChangeTag;
 
     batch == null ? await _databaseInstance.update(recordStructure.ckRecordType, formattedJSON) : batch.update(recordStructure.ckRecordType, formattedJSON);
 
     if (shouldTrackEvent)
     {
       addEvent(CKDatabaseEvent<T>(
-        CKDatabaseEventType.update,
-        CKDatabaseEventSource.local,
-        updatedLocalObjectJSON[CKConstants.RECORD_NAME_FIELD],
-        updatedLocalObject
+        CKRecordChange<T>(updatedLocalObjectJSON[CKConstants.RECORD_NAME_FIELD], CKRecordOperationType.UPDATE, T, localObject: updatedLocalObject),
+        CKDatabaseEventSource.local
       ));
     }
   }
 
+  /// Update the changeTag field for an object in the database.
+  Future<void> updateChangeTag(CKRecordMetadata metadata) async
+  {
+    await _databaseInstance.update(metadata.recordType!, {CKConstants.RECORD_NAME_FIELD: metadata.id, CKConstants.RECORD_CHANGE_TAG_FIELD: metadata.changeTag});
+  }
+
   /// Delete an object from the database.
-  Future<void> delete<T extends Object>(String localObjectID, {T? localObject, bool shouldTrackEvent = true, IBriteBatch? batch}) async
+  Future<void> delete<T extends Object>(String localObjectID, {bool shouldTrackEvent = true, IBriteBatch? batch}) async
   {
     CKRecordStructure recordStructure;
     if (T != Object)
@@ -472,6 +472,9 @@ class CKLocalDatabaseManager
       var ckRecordType = uuidToTypeMap.first["type"] as String;
       recordStructure = CKRecordParser.getRecordStructureFromRecordType(ckRecordType);
     }
+
+    T? localObject;
+    if (shouldTrackEvent) localObject = await queryByID(localObjectID, recordStructure: recordStructure);
 
     batch == null ? await _databaseInstance.delete(recordStructure.ckRecordType, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [localObjectID]) :
         batch.delete(recordStructure.ckRecordType, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [localObjectID]);
@@ -496,10 +499,8 @@ class CKLocalDatabaseManager
     if (shouldTrackEvent)
     {
       addEvent(CKDatabaseEvent<T>(
-        CKDatabaseEventType.delete,
-        CKDatabaseEventSource.local,
-        localObjectID,
-        localObject
+        CKRecordChange<T>(localObjectID, CKRecordOperationType.DELETE, T, localObject: localObject),
+        CKDatabaseEventSource.local
       ));
     }
   }
