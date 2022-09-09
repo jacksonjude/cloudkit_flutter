@@ -291,7 +291,7 @@ class CKRecordModifyOperation extends CKPostOperation
     this._recordModifyRequest = modifyRequest ?? CKRecordModifyRequest((recordChanges ?? []).map((recordChange) {
       var recordJSON = recordChange.recordJSON!;
       recordJSON[CKConstants.RECORD_CHANGE_TAG_FIELD] ??= recordChange.recordMetadata.changeTag;
-      recordJSON[CKConstants.RECORD_FIELDS_FIELD].removeWhere((fieldName, fieldValue) => fieldValue["type"] == CKFieldType.ASSET_TYPE.record);
+      recordJSON[CKConstants.RECORD_FIELDS_FIELD].removeWhere((fieldName, fieldValue) => fieldValue["type"] == CKFieldType.ASSET_TYPE.record); // TODO: Handle asset field changes
       var operationType = recordChange.operationType;
 
       return CKRecordOperation(operationType, recordJSON, null);

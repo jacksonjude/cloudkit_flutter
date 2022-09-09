@@ -64,8 +64,6 @@ class CKLocalDatabaseManager
     managerToInit.cloudDatabase = database ?? CKDatabase.PRIVATE_DATABASE;
     managerToInit.cloudZone = zone ?? CKZone();
 
-    deleteDatabase(managerToInit._databaseName); // TODO: REMOVE THIS AFTER TESTING
-
     var databaseInstance = await openDatabase(
       managerToInit._databaseName,
       version: managerToInit._databaseVersion,
