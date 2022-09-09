@@ -52,7 +52,11 @@ class CKDatabaseEvent<T extends Object>
   /// Perform the change on the local database.
   Future<void> performOnLocalDatabase(CKLocalDatabaseManager databaseManager, [IBriteBatch? batch]) async
   {
-    if (await databaseManager.isChangeTagEqual(recordChange.recordMetadata)) return;
+    if (recordChange.operationType != CKRecordOperationType.DELETE && recordChange.operationType != CKRecordOperationType.FORCE_DELETE)
+    {
+      var changeTagIsEqual = await databaseManager.isChangeTagEqual(recordChange.recordMetadata);
+      if (changeTagIsEqual) return;
+    }
 
     switch (recordChange.operationType)
     {
