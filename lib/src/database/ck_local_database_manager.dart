@@ -330,13 +330,20 @@ class CKLocalDatabaseManager
     return queryResults[0]["cache"];
   }
 
+  /// Query the changeTag for a given metadata.
+  Future<String?> queryChangeTag(CKRecordMetadata metadata) async
+  {
+    if (metadata.recordType == null) return null;
+    var queryResults = await queryMapBySQL('SELECT `${CKConstants.RECORD_CHANGE_TAG_FIELD}` FROM `${metadata.recordType}` WHERE `${CKConstants.RECORD_NAME_FIELD}` = ?', args: [metadata.id]);
+    if (queryResults.length == 0) return null;
+    return queryResults[0][CKConstants.RECORD_CHANGE_TAG_FIELD];
+  }
+
   /// Check if the changeTag for a given metadata is equal to the one in the database.
   Future<bool> isChangeTagEqual(CKRecordMetadata metadata) async
   {
-    if (metadata.recordType == null) return false;
-    var queryResults = await queryMapBySQL('SELECT `${CKConstants.RECORD_CHANGE_TAG_FIELD}` FROM `${metadata.recordType}` WHERE `${CKConstants.RECORD_NAME_FIELD}` = ?', args: [metadata.id]);
-    if (queryResults.length == 0) return false;
-    return queryResults[0][CKConstants.RECORD_CHANGE_TAG_FIELD] == metadata.changeTag;
+    String? savedChangeTag = await queryChangeTag(metadata);
+    return savedChangeTag == metadata.changeTag;
   }
 
   /// Query the raw sqlite rows in JSON format.
@@ -525,9 +532,14 @@ class CKLocalDatabaseManager
   }
 
   /// Add a database change event.
-  void addEvent(CKDatabaseEvent event)
+  void addEvent(CKDatabaseEvent event) async
   {
+    if (event.recordChange.recordMetadata.changeTag == null)
+    {
+      event.recordChange.recordMetadata.changeTag = await queryChangeTag(event.recordChange.recordMetadata);
+    }
     _databaseEventHistory.add(event);
+    await synchronizeAllEvents();
   }
 
   /// Sync all database events.

@@ -17,6 +17,7 @@ import 'request_models/ck_record_modify_request.dart';
 import 'request_models/ck_subscription_operation.dart';
 import 'request_models/ck_record_change.dart';
 import '/src/parsing/ck_record_parser.dart';
+import '/src/parsing/types/ck_field_type.dart';
 import '/src/ck_constants.dart';
 
 /// The status after an operation has been executed.
@@ -289,6 +290,8 @@ class CKRecordModifyOperation extends CKPostOperation
   {
     this._recordModifyRequest = modifyRequest ?? CKRecordModifyRequest((recordChanges ?? []).map((recordChange) {
       var recordJSON = recordChange.recordJSON!;
+      recordJSON[CKConstants.RECORD_CHANGE_TAG_FIELD] ??= recordChange.recordMetadata.changeTag;
+      recordJSON[CKConstants.RECORD_FIELDS_FIELD].removeWhere((fieldName, fieldValue) => fieldValue["type"] == CKFieldType.ASSET_TYPE.record);
       var operationType = recordChange.operationType;
 
       return CKRecordOperation(operationType, recordJSON, null);
@@ -491,7 +494,6 @@ class CKAPNSCreateTokenOperation extends CKPostOperation
   Future<CKOperationCallback<CKAPNSToken>> execute() async
   {
     CKOperationCallback createTokenCallback = await super.execute();
-    print(createTokenCallback.response);
     return CKOperationCallback<CKAPNSToken>(createTokenCallback.state,
         response: createTokenCallback.state == CKOperationState.success ? CKAPNSToken.fromJSON(createTokenCallback.response) : null
     );

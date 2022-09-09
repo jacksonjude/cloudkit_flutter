@@ -8,17 +8,17 @@ import 'ck_local_database_manager.dart';
 /// A database change event.
 class CKDatabaseEvent<T extends Object>
 {
-  final CKRecordChange _recordChange;
-  final CKDatabaseEventSource _source;
+  final CKRecordChange recordChange;
+  final CKDatabaseEventSource source;
 
-  String get _objectID => _recordChange.recordMetadata.id;
+  String get _objectID => recordChange.recordMetadata.id;
 
-  CKDatabaseEvent(this._recordChange, this._source);
+  CKDatabaseEvent(this.recordChange, this.source);
 
   /// Sync the database change event to the cloud or local database.
   Future<void> synchronize(CKLocalDatabaseManager databaseManager, [IBriteBatch? batch]) async
   {
-    switch (_source)
+    switch (source)
     {
       case CKDatabaseEventSource.local:
         await performOnCloudDatabase(databaseManager);
@@ -33,10 +33,12 @@ class CKDatabaseEvent<T extends Object>
   /// Perform the change on the cloud database.
   Future<void> performOnCloudDatabase(CKLocalDatabaseManager databaseManager) async
   {
-    if (_recordChange.localObject == null) return;
+    if (recordChange.localObject == null) return;
 
-    var recordJSON = CKRecordParser.localObjectToRecord<T>(_recordChange.localObject!);
-    var modifyOperation = CKRecordModifyOperation(databaseManager.cloudDatabase, zoneID: databaseManager.cloudZone, recordChanges: [CKRecordChange(_recordChange.recordMetadata.id, _recordChange.operationType, T, recordJSON: recordJSON)]);
+    var recordJSON = CKRecordParser.localObjectToRecord<T>(recordChange.localObject!);
+    var modifyOperation = CKRecordModifyOperation(databaseManager.cloudDatabase, zoneID: databaseManager.cloudZone, recordChanges: [
+      CKRecordChange(recordChange.recordMetadata.id, recordChange.operationType, T, recordJSON: recordJSON, recordChangeTag: recordChange.recordMetadata.changeTag)
+    ]);
     var modifyCallback = await modifyOperation.execute();
     if (modifyCallback.response == null) return;
 
@@ -50,22 +52,22 @@ class CKDatabaseEvent<T extends Object>
   /// Perform the change on the local database.
   Future<void> performOnLocalDatabase(CKLocalDatabaseManager databaseManager, [IBriteBatch? batch]) async
   {
-    if (await databaseManager.isChangeTagEqual(_recordChange.recordMetadata)) return;
+    if (await databaseManager.isChangeTagEqual(recordChange.recordMetadata)) return;
 
-    switch (_recordChange.operationType)
+    switch (recordChange.operationType)
     {
       case CKRecordOperationType.CREATE:
       case CKRecordOperationType.UPDATE:
       case CKRecordOperationType.REPLACE:
       case CKRecordOperationType.FORCE_UPDATE:
       case CKRecordOperationType.FORCE_REPLACE:
-        if (_recordChange.localObject == null) return;
-        await databaseManager.insert<T>(_recordChange.localObject!, recordChangeTag: _recordChange.recordMetadata.changeTag, shouldUseReplace: true, shouldTrackEvent: false, batch: batch);
+        if (recordChange.localObject == null) return;
+        await databaseManager.insert<T>(recordChange.localObject!, recordChangeTag: recordChange.recordMetadata.changeTag, shouldUseReplace: true, shouldTrackEvent: false, batch: batch);
         break;
 
       case CKRecordOperationType.DELETE:
       case CKRecordOperationType.FORCE_DELETE:
-        await databaseManager.delete<T>(_recordChange.recordMetadata.id, shouldTrackEvent: false, batch: batch);
+        await databaseManager.delete<T>(recordChange.recordMetadata.id, shouldTrackEvent: false, batch: batch);
         break;
     }
   }
@@ -117,10 +119,10 @@ class CKDatabaseEventList
   void _cleanEvents() // TODO: Account for local vs cloud changes
   {
     this._l.forEach((event) {
-      switch (event._recordChange.operationType)
+      switch (event.recordChange.operationType)
       {
         case CKRecordOperationType.CREATE:
-          var deleteEvents = this._l.where((testEvent) => testEvent._objectID == event._objectID && testEvent._recordChange.operationType == CKRecordOperationType.DELETE);
+          var deleteEvents = this._l.where((testEvent) => testEvent._objectID == event._objectID && testEvent.recordChange.operationType == CKRecordOperationType.DELETE);
           if (deleteEvents.isNotEmpty)
           {
             this._l.remove(event);
@@ -130,10 +132,10 @@ class CKDatabaseEventList
             return;
           }
 
-          var updateEvents = this._l.where((testEvent) => testEvent._objectID == event._objectID && testEvent._recordChange.operationType == CKRecordOperationType.UPDATE);
+          var updateEvents = this._l.where((testEvent) => testEvent._objectID == event._objectID && testEvent.recordChange.operationType == CKRecordOperationType.UPDATE);
           if (updateEvents.isNotEmpty)
           {
-            event._recordChange.localObject = updateEvents.last._recordChange.localObject;
+            event.recordChange.localObject = updateEvents.last.recordChange.localObject;
             updateEvents.forEach((updateEvent) {
               this._l.remove(updateEvent);
             });
@@ -144,10 +146,10 @@ class CKDatabaseEventList
         case CKRecordOperationType.REPLACE:
         case CKRecordOperationType.FORCE_UPDATE:
         case CKRecordOperationType.FORCE_REPLACE:
-          var updateEvents = this._l.where((testEvent) => testEvent != event && testEvent._objectID == event._objectID && testEvent._recordChange.operationType == CKRecordOperationType.UPDATE);
+          var updateEvents = this._l.where((testEvent) => testEvent != event && testEvent._objectID == event._objectID && testEvent.recordChange.operationType == CKRecordOperationType.UPDATE);
           if (updateEvents.isNotEmpty)
           {
-            event._recordChange.localObject = updateEvents.last._recordChange.localObject;
+            event.recordChange.localObject = updateEvents.last.recordChange.localObject;
             updateEvents.forEach((updateEvent) {
               this._l.remove(updateEvent);
             });

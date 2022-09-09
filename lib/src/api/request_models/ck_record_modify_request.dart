@@ -14,7 +14,7 @@ class CKRecordModifyRequest
 
   /// Convert the record modify request to JSON.
   Map<String, dynamic> toJSON() => {
-    'operations': _operations.map((operation) => operation.toJSON()),
+    'operations': _operations.map((operation) => operation.toJSON()).toList(),
     'zoneID': _zoneID.toJSON(),
     'atomic': _atomic,
     'desiredKeys': _recordFields,
