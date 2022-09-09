@@ -11,6 +11,7 @@ class CKConstants
 
   static const WEB_AUTH_TOKEN_STORAGE_KEY = "CK_WEB_AUTH_TOKEN";
   static const NOTIFICATION_TOKEN_STORAGE_KEY = "CK_APNS_TOKEN";
+  static const LOCAL_DATABASE_SYNC_TOKEN_KEY = "CK_LOCAL_DATABASE_SYNC_TOKEN";
 
   static const RECORD_NAME_FIELD = "recordName";
   static const RECORD_TYPE_FIELD = "recordType";

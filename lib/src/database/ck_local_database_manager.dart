@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:sqlbrite/sqlbrite.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '/src/parsing/ck_field_structure.dart';
 import '/src/parsing/ck_record_parser.dart';
@@ -105,6 +106,7 @@ class CKLocalDatabaseManager
   Future<void> initCloudSync(CKAPNSEnvironment environment, {String? subscriptionID, CKAPIManager? apiManager}) async
   {
     _apiManager = apiManager;
+    _syncToken = await _fetchSyncToken();
 
     var lookupZoneOperation = CKZoneLookupOperation([cloudZone], cloudDatabase);
     var lookupZoneOperationCallback = await lookupZoneOperation.execute();
@@ -153,28 +155,51 @@ class CKLocalDatabaseManager
     var changesOperationCallback = await zoneChangesOperation.execute();
 
     var groupedChanges = changesOperationCallback.recordChanges.groupBy((recordChange) => recordChange.recordMetadata.localType);
-    groupedChanges.forEach((recordType, recordChanges) {
+    for (var changesEntry in groupedChanges.entries)
+    {
+      var recordType = changesEntry.key;
+      var recordChanges = changesEntry.value;
       if (recordType != dynamic)
       {
         var recordStructure = CKRecordParser.getRecordStructureFromLocalType(recordType!);
         var recordTypeAnnotation = recordStructure.recordTypeAnnotation!;
 
-        recordChanges.forEach((recordChange) {
-          addEvent(recordTypeAnnotation.createCloudEvent(recordChange));
-        });
+        for (var recordChange in recordChanges)
+        {
+          await addEvent(recordTypeAnnotation.createCloudEvent(recordChange), shouldSync: false);
+        }
       }
       else
       {
         recordChanges.removeWhere((recordChange) => recordChange.operationType != CKRecordOperationType.DELETE);
-        recordChanges.forEach((recordChange) {
-          addEvent(CKDatabaseEvent(recordChange, CKDatabaseEventSource.cloud));
-        });
+        for (var recordChange in recordChanges)
+        {
+          await addEvent(CKDatabaseEvent(recordChange, CKDatabaseEventSource.cloud), shouldSync: false);
+        }
       }
-    });
+    }
 
     _syncToken = changesOperationCallback.syncToken;
+    _saveSyncToken(_syncToken);
 
     await synchronizeAllEvents();
+  }
+
+  Future<CKSyncToken?> _fetchSyncToken() async
+  {
+    WidgetsFlutterBinding.ensureInitialized();
+    final prefs = await SharedPreferences.getInstance();
+    var rawSyncToken = prefs.getString(CKConstants.LOCAL_DATABASE_SYNC_TOKEN_KEY);
+    return rawSyncToken != null ? CKSyncToken(rawSyncToken) : null;
+  }
+
+  Future<void> _saveSyncToken(CKSyncToken? syncToken) async
+  {
+    if (syncToken == null) return;
+
+    WidgetsFlutterBinding.ensureInitialized();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(CKConstants.LOCAL_DATABASE_SYNC_TOKEN_KEY, syncToken.toString());
   }
 
   /// End cloud sync notifications.
@@ -185,6 +210,8 @@ class CKLocalDatabaseManager
 
   Future<Map<String, dynamic>> _formatForSQLite<T>(Map<String, dynamic> recordJSON, {IBriteBatch? batch}) async
   {
+    recordJSON = Map.of(recordJSON);
+
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
     for (var field in recordStructure.fields)
@@ -457,7 +484,10 @@ class CKLocalDatabaseManager
     var formattedJSON = await _formatForSQLite<T>(updatedLocalObjectJSON, batch: batch);
     if (recordChangeTag != null) formattedJSON[CKConstants.RECORD_CHANGE_TAG_FIELD] = recordChangeTag;
 
-    batch == null ? await _databaseInstance.update(recordStructure.ckRecordType, formattedJSON) : batch.update(recordStructure.ckRecordType, formattedJSON);
+    String recordName = formattedJSON.remove(CKConstants.RECORD_NAME_FIELD);
+
+    batch == null ? await _databaseInstance.update(recordStructure.ckRecordType, formattedJSON, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [recordName]) :
+        batch.update(recordStructure.ckRecordType, formattedJSON, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [recordName]);
 
     if (shouldTrackEvent)
     {
@@ -471,7 +501,7 @@ class CKLocalDatabaseManager
   /// Update the changeTag field for an object in the database.
   Future<void> updateChangeTag(CKRecordMetadata metadata) async
   {
-    await _databaseInstance.update(metadata.recordType!, {CKConstants.RECORD_NAME_FIELD: metadata.id, CKConstants.RECORD_CHANGE_TAG_FIELD: metadata.changeTag});
+    await _databaseInstance.update(metadata.recordType!, {CKConstants.RECORD_CHANGE_TAG_FIELD: metadata.changeTag}, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [metadata.id]);
   }
 
   /// Delete an object from the database.
@@ -530,14 +560,14 @@ class CKLocalDatabaseManager
   }
 
   /// Add a database change event.
-  void addEvent(CKDatabaseEvent event) async
+  Future<void> addEvent(CKDatabaseEvent event, {bool shouldSync = true}) async
   {
     if (event.recordChange.recordMetadata.changeTag == null)
     {
       event.recordChange.recordMetadata.changeTag = await queryChangeTag(event.recordChange.recordMetadata);
     }
     _databaseEventHistory.add(event);
-    await synchronizeAllEvents();
+    if (shouldSync) await synchronizeAllEvents();
   }
 
   /// Sync all database events.
