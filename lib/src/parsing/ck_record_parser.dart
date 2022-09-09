@@ -221,9 +221,9 @@ class CKRecordParser
     recordStructure.fields.forEach((field)
     {
       var rawValue = instanceMirror.invokeGetter(field.localName);
-      if (rawValue == null) return;
 
-      var convertedValue = convertToRecordValue(field.type, rawValue);
+      var convertedValue;
+      if (rawValue != null) convertedValue = convertToRecordValue(field.type, rawValue);
 
       newRecordObject[field.ckName] = convertedValue;
     });
