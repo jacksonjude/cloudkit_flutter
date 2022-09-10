@@ -56,7 +56,7 @@ class CKLocalDatabaseManager
   CKSyncToken? _syncToken;
 
   /// Initialize the shared local database for the application. Optionally, a custom [CKLocalDatabaseManager] can be passed in.
-  static Future<void> initializeDatabase(Map<Type,CKRecordStructure> recordStructures, {CKDatabase? database, CKZone? zone, CKLocalDatabaseManager? manager}) async
+  static Future<void> initDatabase(Map<Type,CKRecordStructure> recordStructures, {CKDatabase? database, CKZone? zone, CKLocalDatabaseManager? manager}) async
   {
     WidgetsFlutterBinding.ensureInitialized();
 
@@ -304,36 +304,19 @@ class CKLocalDatabaseManager
     return rawJSON;
   }
 
-  /// Create a query stream for a record type.
-  Stream<List<T>> createQuery<T extends Object>([String? where, List? whereArgs])
+  /// Query records by where SQL.
+  Future<List<T>> query<T extends Object>([String? where, List? whereArgs]) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
-    return _databaseInstance.createQuery(recordStructure.ckRecordType, where: where, whereArgs: whereArgs)
-        .asyncMapToList<T>(_convertFromSQLiteMap);
-  }
+    var queryResults = await _databaseInstance.query(recordStructure.ckRecordType, where: where, whereArgs: whereArgs);
 
-  /// Create a query stream for a specific record id.
-  Stream<T> createQueryByID<T extends Object>(String recordID)
-  {
-    var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
-
-    return _databaseInstance.createQuery(recordStructure.ckRecordType, where: '${CKConstants.RECORD_NAME_FIELD} = ?', whereArgs: [recordID])
-        .asyncMapToOne<T>(_convertFromSQLiteMap);
-  }
-
-  /// Create a raw query stream for a record type.
-  Stream<List<T>> createQueryBySQL<T extends Object>(List<String> tables, String sql, [List? args])
-  {
-    return _databaseInstance.createRawQuery(tables, sql, args)
-        .asyncMapToList<T>(_convertFromSQLiteMap);
-  }
-
-  /// Create a raw query stream for a specific record.
-  Stream<T> createSingularQueryBySQL<T extends Object>(List<String> tables, String sql, [List? args])
-  {
-    return _databaseInstance.createRawQuery(tables, sql, args)
-        .asyncMapToOne<T>(_convertFromSQLiteMap);
+    List<T> localObjectResults = [];
+    for (var queryResult in queryResults)
+    {
+      localObjectResults.add(await _convertFromSQLiteMap<T>(queryResult));
+    }
+    return localObjectResults;
   }
 
   /// Query a record by id.
@@ -385,15 +368,44 @@ class CKLocalDatabaseManager
     return localObject;
   }
 
-  /// Get a stream for changes on an object.
-  Stream<T> streamObject<T extends Object>(T object)
+  Stream<List<T>> _createQuery<T extends Object>(String table, [String? where, List? whereArgs])
+  {
+    return _databaseInstance.createQuery(table, where: where, whereArgs: whereArgs)
+        .asyncMapToList<T>(_convertFromSQLiteMap);
+  }
+
+  Stream<T> _createSingularQuery<T extends Object>(String table, [String? where, List? whereArgs])
+  {
+    return _databaseInstance.createQuery(table, where: where, whereArgs: whereArgs)
+        .asyncMapToOne<T>(_convertFromSQLiteMap);
+  }
+
+  Stream<List<T>> _createQueryBySQL<T extends Object>(List<String> tables, String sql, [List? args])
+  {
+    return _databaseInstance.createRawQuery(tables, sql, args)
+        .asyncMapToList<T>(_convertFromSQLiteMap);
+  }
+
+  Stream<T> _createSingularQueryBySQL<T extends Object>(List<String> tables, String sql, [List? args])
+  {
+    return _databaseInstance.createRawQuery(tables, sql, args)
+        .asyncMapToOne<T>(_convertFromSQLiteMap);
+  }
+
+  /// Get a stream for changes on an object type.
+  Stream<List<T>> streamObjects<T extends Object>([String? where, List? whereArgs])
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
-    var objectID = CKRecordParser.getIDFromLocalObject(object, recordStructure);
 
-    return createSingularQueryBySQL<T>([recordStructure.ckRecordType],
-        "SELECT * FROM `${recordStructure.ckRecordType}` WHERE ${CKConstants.RECORD_NAME_FIELD} = ?",
-        [objectID]);
+    return _createQuery<T>(recordStructure.ckRecordType, where, whereArgs);
+  }
+
+  /// Get a stream for changes on an object by id.
+  Stream<T> streamByID<T extends Object>(String objectID)
+  {
+    var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
+
+    return _createSingularQuery<T>(recordStructure.ckRecordType, "${CKConstants.RECORD_NAME_FIELD} = ?", [objectID]);
   }
 
   /// Get a stream for changes on an object field.
@@ -404,7 +416,7 @@ class CKLocalDatabaseManager
 
     var parentObjectID = CKRecordParser.getIDFromLocalObject(parentObject, parentRecordStructure);
 
-    return createSingularQueryBySQL<V>([childRecordStructure.ckRecordType, parentRecordStructure.ckRecordType],
+    return _createSingularQueryBySQL<V>([childRecordStructure.ckRecordType, parentRecordStructure.ckRecordType],
         "SELECT * FROM `${childRecordStructure.ckRecordType}` WHERE ${CKConstants.RECORD_NAME_FIELD} = (SELECT $referenceFieldName from `${parentRecordStructure.ckRecordType}` WHERE `${CKConstants.RECORD_NAME_FIELD}` = ?)",
         [parentObjectID]);
   }
@@ -418,13 +430,13 @@ class CKLocalDatabaseManager
     var joinTableName = '${parentRecordStructure.ckRecordType}_$referenceListFieldName';
     var parentObjectID = CKRecordParser.getIDFromLocalObject(parentObject, parentRecordStructure);
 
-    return createQueryBySQL<V>([childRecordStructure.ckRecordType, joinTableName],
+    return _createQueryBySQL<V>([childRecordStructure.ckRecordType, joinTableName],
         "SELECT * FROM `${childRecordStructure.ckRecordType}` WHERE ${CKConstants.RECORD_NAME_FIELD} IN (SELECT `$referenceListFieldName` from `$joinTableName` WHERE `${parentRecordStructure.ckRecordType}ID` = ?)${where != null ? " AND ($where)" : ""}${orderBy != null ? " ORDER BY $orderBy" : ""}",
         [parentObjectID, ...?whereArgs]);
   }
 
   /// Insert an object into the database.
-  Future<void> insert<T extends Object>(T localObject, {String? recordChangeTag, bool shouldUseReplace = false, bool shouldTrackEvent = true, IBriteBatch? batch}) async
+  Future<void> insert<T extends Object>(T localObject, {bool shouldUseReplace = false, bool shouldTrackEvent = true, String? recordChangeTag, IBriteBatch? batch}) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
@@ -476,7 +488,7 @@ class CKLocalDatabaseManager
   }
 
   /// Update an object in the database.
-  Future<void> update<T extends Object>(T updatedLocalObject, {String? recordChangeTag, bool shouldTrackEvent = true, IBriteBatch? batch}) async
+  Future<void> update<T extends Object>(T updatedLocalObject, {bool shouldTrackEvent = true, String? recordChangeTag, IBriteBatch? batch}) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 

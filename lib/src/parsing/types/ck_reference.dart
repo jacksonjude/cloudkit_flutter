@@ -58,7 +58,7 @@ class CKReference<T extends Object>
   Stream<T> stream({CKLocalDatabaseManager? manager})
   {
     var managerToUse = manager ?? CKLocalDatabaseManager.shared;
-    return managerToUse.createQueryByID<T>(referenceUUID);
+    return managerToUse.streamByID<T>(referenceUUID);
   }
 
   /// Get the cached object.
