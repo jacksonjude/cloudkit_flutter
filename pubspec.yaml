@@ -1,6 +1,6 @@
 name: cloudkit_flutter
 description: CloudKit support for Flutter via CloudKit Web Services on Android & iOS
-version: 0.1.4
+version: 0.2.0
 publish_to: none
 homepage: https://jacksonjude.com
 repository: https://github.com/jacksonjude/cloudkit_flutter
@@ -22,7 +22,6 @@ dependencies:
       path: reflectable
   build_runner: ^2.2.0
   shared_preferences: ^2.0.15
-  sqflite: ^2.0.3+1
   sqlbrite: ^2.3.0
   tuple: ^2.0.0
   quiver: ^3.1.0

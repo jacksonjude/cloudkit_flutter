@@ -1,6 +1,6 @@
 # cloudkit_flutter
 
-CloudKit support for Flutter via [CloudKit Web Services](https://developer.apple.com/library/archive/documentation/DataManagement/Conceptual/CloudKitWebServicesReference). Inspired by [DroidNubeKit](https://github.com/jaumecornado/DroidNubeKit).
+CloudKit support for Flutter via [CloudKit Web Services](https://developer.apple.com/library/archive/documentation/DataManagement/Conceptual/CloudKitWebServicesReference), with built-in database synchronization. Inspired by [DroidNubeKit](https://github.com/jaumecornado/DroidNubeKit).
 
 1. [Supported Platforms](#supported-platforms)
 2. [Setup](#setup)
@@ -17,7 +17,7 @@ CloudKit support for Flutter via [CloudKit Web Services](https://developer.apple
     * [Local Database Operations](#local-database-operations)
     * [API Operations](#api-operations)
     * [API Request Models](#api-request-models)
-7. [Import Points](#import-points)
+7. [Library Sections](#library-sections)
 
 ## Supported Platforms
 
@@ -191,27 +191,27 @@ This call will automatically create a zone subscription and register an APNS tok
 
 ## Usage
 
-If syncing through the Local SQLite Database is [enabled](#cloud-sync), you only need to use the [database operations](#local-database-operations) to query or modify the CloudKit database.
+If syncing through the Local SQLite Database is [enabled](#cloud-sync), can use the [database operations](#local-database-operations) to query or modify the CloudKit database.
 
-Alternatively, you can directly access the CloudKit API through [CKOperation](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_api/CKOperation-class.html) objects, which come in many [subclasses](#api-operations).
+Alternatively, you can directly access the CloudKit API through [CKOperation](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_api/CKOperation-class.html) instances, which come in many [subclasses](#api-operations).
 
 ### Local Database Operations
 
-#### query
+#### [query](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_database/CKLocalDatabaseManager/query.html)
 
 This method queries a list of Dart objects on the SQLite database for the provided type and SQLite `where` string:
 ```dart
 Future<List<T>> CKLocalDatabaseManager.shared.query<T>([String? where, List? whereArgs]) async
 ```
 
-#### queryByID
+#### [queryByID](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_database/CKLocalDatabaseManager/queryByID.html)
 
 This method queries a Dart object on the SQLite database for the provided type with the given `id`:
 ```dart
 Future<T?> CKLocalDatabaseManager.shared.queryByID<T>(String recordID) async
 ```
 
-#### insert
+#### [insert](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_database/CKLocalDatabaseManager/insert.html)
 
 This method inserts a given Dart object into the SQLite database, automatically tracking the event for upload to the cloud:
 ```dart
@@ -220,42 +220,42 @@ CKLocalDatabaseManager.shared.insert<T>(T localObject, {bool shouldUseReplace = 
 
 Optionally, the SQLite `REPLACE` command can be used instead, avoiding database collisions if the record already exists.
 
-#### update
+#### [update](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_database/CKLocalDatabaseManager/update.html)
 
 This method updates a record in the SQLite database with the given Dart object, automatically tracking the event for upload to the cloud:
 ```dart
 CKLocalDatabaseManager.shared.update<T>(T updatedLocalObject, {bool shouldTrackEvent = true}) async
 ```
 
-#### delete
+#### [delete](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_database/CKLocalDatabaseManager/delete.html)
 
 This method deletes a record in the SQLite database with the given id, automatically tracking the event for upload to the cloud:
 ```dart
 CKLocalDatabaseManager.shared.delete<T>(String localObjectID, {bool shouldTrackEvent = true}) async
 ```
 
-#### streamObjects
+#### [streamObjects](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_database/CKLocalDatabaseManager/streamObjects.html)
 
 This method creates a `Stream<List<T>>` object, which updates when changes occur in the database on the given object type, and can optionally filter results by an SQLite `where` string:
 ```dart
 Stream<List<T>> CKLocalDatabaseManager.shared.streamObjects<T>([String? where, List? whereArgs])
 ```
 
-#### streamByID
+#### [streamByID](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_database/CKLocalDatabaseManager/streamByID.html)
 
 This method creates a `Stream<T>` object, which updates when changes occur in the database on the record with the given id:
 ```dart
 Stream<T> CKLocalDatabaseManager.shared.streamObject<T>(String objectID)
 ```
 
-#### streamField
+#### [streamField](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_database/CKLocalDatabaseManager/streamField.html)
 
 This method creates a `Stream<V>` object, which updates when changes occur in the database on a `CKReference` field within a record. It requires the `parentObject` and the reference field name:
 ```dart
 Stream<V> CKLocalDatabaseManager.shared.streamObject<U, V>(U parentObject, String referenceFieldName)
 ```
 
-#### streamListField
+#### [streamListField](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_database/CKLocalDatabaseManager/streamListField.html)
 
 This method creates a `Stream<V>` object, which updates when changes occur in the database on a `List<CKReference>` field within a record. It requires the `parentObject` and the reference field name, and can optionally filter results by SQLite `where` and SQLite `orderBy` strings:
 ```dart
@@ -312,7 +312,7 @@ Query objects are containers to store the CloudKit record type (`recordType`), a
 
 Record query request objects represent the information needed to perform a [CKRecordQueryOperation](#ckrecordqueryoperation), including a [CKZone](#ckzone) (`zoneID`), a result limit (`resultsLimit`), and a [CKQuery](#ckquery) object (`query`).
 
-## Import points
+## Library Sections
 
 To reduce the amount of included classes, you can choose to import a single section of the library, as described below.
 
@@ -322,11 +322,15 @@ Includes all exposed classes.
 
 ### [cloudkit_flutter_init.dart](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_init/cloudkit_flutter_init-library.html)
 
-Includes classes necessary to initialize the API manager ([CKAPIManager](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_init/CKAPIManager-class.html)) and record parser ([CKRecordParser](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_init/CKRecordParser-class.html)).
+Includes classes necessary to initialize the record parser ([CKRecordParser](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_init/CKRecordParser-class.html)), API manager ([CKAPIManager](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_init/CKAPIManager-class.html)), and local database ([CKLocalDatabaseManager](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_init/CKLocalDatabaseManager-class.html)).
 
 ### [cloudkit_flutter_model.dart](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_model/cloudkit_flutter_model-library.html)
 
 Includes classes necessary to annotate model files ([CKRecordTypeAnnotation](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_model/CKRecordTypeAnnotation-class.html), [CKRecordNameAnnotation](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_model/CKRecordNameAnnotation-class.html), [CKFieldAnnotation](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_model/CKFieldAnnotation-class.html), [CKReferenceFieldAnnotation](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_model/CKReferenceFieldAnnotation-class.html)), use special field types ([CKReference](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_model/CKReference-class.html), [CKAsset](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_model/CKAsset-class.html)), and create custom field types ([CKCustomFieldType](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_model/CKCustomFieldType-class.html)).
+
+### [cloudkit_flutter_database.dart](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_database/cloudkit_flutter_database-library.html)
+
+Includes classes necessary to access the local SQLite database ([CKLocalDatabaseManager](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_database/CKLocalDatabaseManager-class.html), [CKDatabaseEvent](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_database/CKDatabaseEvent-class.html)).
 
 ### [cloudkit_flutter_api.dart](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_api/cloudkit_flutter_api-library.html)
 
