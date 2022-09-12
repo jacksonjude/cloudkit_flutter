@@ -1,4 +1,4 @@
-import 'package:reflectable/reflectable.dart';
+import '/reflectable.dart';
 
 import '/src/parsing/reflector.dart';
 

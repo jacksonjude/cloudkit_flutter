@@ -1,4 +1,4 @@
-import 'package:reflectable/reflectable.dart';
+import '/reflectable.dart';
 
 /// Custom [Reflectable] subclass with invokingCapability, typingCapability, and reflectedTypeCapability.
 class Reflector extends Reflectable

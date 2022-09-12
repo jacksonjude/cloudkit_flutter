@@ -1,4 +1,4 @@
-import 'package:reflectable/reflectable.dart';
+import '/reflectable.dart';
 import 'package:collection/collection.dart';
 
 import '/src/ck_constants.dart';

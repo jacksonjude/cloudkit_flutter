@@ -1,4 +1,4 @@
-import 'package:reflectable/reflectable.dart';
+import '/reflectable.dart';
 
 import 'ck_field_structure.dart';
 import 'annotations/ck_record_type_annotation.dart';
