@@ -4174,11 +4174,11 @@ ${imports.join('\n')}
 // ignore_for_file: unnecessary_const
 
 // ignore:unused_import
-import 'package:reflectable/mirrors.dart' as m;
+import 'package:cloudkit_flutter/reflectable/mirrors.dart' as m;
 // ignore:unused_import
-import 'package:reflectable/src/reflectable_builder_based.dart' as r;
+import 'package:cloudkit_flutter/reflectable/src/reflectable_builder_based.dart' as r;
 // ignore:unused_import
-import 'package:reflectable/reflectable.dart' as r show Reflectable;
+import 'package:cloudkit_flutter/reflectable/reflectable.dart' as r show Reflectable;
 
 $code
 

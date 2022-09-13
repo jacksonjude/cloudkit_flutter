@@ -1,4 +1,23 @@
-# This file prevents reflectable from creating .reflectable.dart files everywhere
+builders:
+  reflectable:
+    target: ":reflectable"
+    import: "package:cloudkit_flutter/reflectable/reflectable_builder.dart"
+    builder_factories: ["reflectableBuilder"]
+    build_extensions: {".dart": [".reflectable.dart"]}
+    auto_apply: root_package
+    build_to: source
+    defaults:
+      generate_for:
+        include:
+          - benchmark/**.dart
+          - bin/**.dart
+          - example/**.dart
+          - lib/main.dart
+          - test/**.dart
+          - tool/**.dart
+          - web/**.dart
+
+# This section prevents reflectable from creating .reflectable.dart files everywhere
 
 targets:
   $default:
