@@ -1,1 +1,1 @@
-export 'reflectable/reflectable.dart';
+export 'reflectable/reflectable/lib/reflectable.dart';

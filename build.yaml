@@ -1,7 +1,7 @@
 builders:
   reflectable:
     target: ":reflectable"
-    import: "package:cloudkit_flutter/reflectable/reflectable_builder.dart"
+    import: "package:cloudkit_flutter/reflectable/reflectable/lib/reflectable_builder.dart"
     builder_factories: ["reflectableBuilder"]
     build_extensions: {".dart": [".reflectable.dart"]}
     auto_apply: root_package
