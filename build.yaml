@@ -9,20 +9,6 @@ builders:
     defaults:
       generate_for:
         include:
-          - benchmark/**.dart
-          - bin/**.dart
-          - example/**.dart
-          - lib/main.dart
-          - test/**.dart
-          - tool/**.dart
-          - web/**.dart
-
-# This section prevents reflectable from creating .reflectable.dart files everywhere
-
-targets:
-  $default:
-    builders:
-      reflectable:
-        generate_for:
-          - test/cloudkit_flutter_test.dart
           - example/lib/main.dart
+          - test/*.dart
+          - lib/main.dart
