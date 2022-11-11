@@ -65,8 +65,8 @@ class CKLocalDatabaseManager
     managerToInit.cloudDatabase = database ?? CKDatabase.PRIVATE_DATABASE;
     managerToInit.cloudZone = zone ?? CKZone();
 
-    deleteDatabase(managerToInit._databaseName);
-    managerToInit._resetSyncToken();
+    // deleteDatabase(managerToInit._databaseName);
+    // managerToInit._resetSyncToken();
 
     var databaseInstance = await openDatabase(
       managerToInit._databaseName,
