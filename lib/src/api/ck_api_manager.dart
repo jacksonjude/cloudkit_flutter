@@ -90,12 +90,8 @@ class CKAPIManager
         case 401:
           return CKOperationCallback(CKOperationState.authFailure);
 
-        case 400:
-          print(response.body);
-          continue unknownError;
-
-        unknownError:
         default:
+          print(response.body);
           return CKOperationCallback(CKOperationState.unknownError);
       }
     }

@@ -65,6 +65,9 @@ class CKLocalDatabaseManager
     managerToInit.cloudDatabase = database ?? CKDatabase.PRIVATE_DATABASE;
     managerToInit.cloudZone = zone ?? CKZone();
 
+    deleteDatabase(managerToInit._databaseName);
+    managerToInit._resetSyncToken();
+
     var databaseInstance = await openDatabase(
       managerToInit._databaseName,
       version: managerToInit._databaseVersion,
@@ -189,7 +192,7 @@ class CKLocalDatabaseManager
   {
     WidgetsFlutterBinding.ensureInitialized();
     final prefs = await SharedPreferences.getInstance();
-    var rawSyncToken = prefs.getString(CKConstants.LOCAL_DATABASE_SYNC_TOKEN_KEY);
+    var rawSyncToken = prefs.getString(CKConstants.LOCAL_DATABASE_SYNC_TOKEN_KEY + "-" + _databaseName);
     return rawSyncToken != null ? CKSyncToken(rawSyncToken) : null;
   }
 
@@ -199,7 +202,7 @@ class CKLocalDatabaseManager
 
     WidgetsFlutterBinding.ensureInitialized();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(CKConstants.LOCAL_DATABASE_SYNC_TOKEN_KEY, syncToken.toString());
+    await prefs.setString(CKConstants.LOCAL_DATABASE_SYNC_TOKEN_KEY + "-" + _databaseName, syncToken.toString());
   }
 
   /// End cloud sync notifications.
@@ -208,7 +211,14 @@ class CKLocalDatabaseManager
     await _notificationStreamSubscription?.cancel();
   }
 
-  Future<Map<String, dynamic>> _formatForSQLite<T>(Map<String, dynamic> recordJSON, {IBriteBatch? batch}) async
+  Future<void> _resetSyncToken() async
+  {
+    WidgetsFlutterBinding.ensureInitialized();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(CKConstants.LOCAL_DATABASE_SYNC_TOKEN_KEY + "-" + _databaseName);
+  }
+
+  Future<Map<String, dynamic>> _formatForSQLite<T>(Map<String, dynamic> recordJSON, {CKLocalDatabaseBatch? batch}) async
   {
     recordJSON = Map.of(recordJSON);
 
@@ -248,7 +258,7 @@ class CKLocalDatabaseManager
           return true;
         });
 
-        var insertBatch = batch ?? _databaseInstance.batch();
+        var insertBatch = batch?._briteBatch ?? _databaseInstance.batch();
         objectsToInsert.forEach((element) {
           insertBatch.insert('`${recordStructure.ckRecordType}_${field.ckName}`', {'`${recordStructure.ckRecordType}ID`': recordJSON[CKConstants.RECORD_NAME_FIELD], field.ckName: element});
         });
@@ -436,7 +446,7 @@ class CKLocalDatabaseManager
   }
 
   /// Insert an object into the database.
-  Future<void> insert<T extends Object>(T localObject, {bool shouldUseReplace = false, bool shouldTrackEvent = true, String? recordChangeTag, IBriteBatch? batch}) async
+  Future<void> insert<T extends Object>(T localObject, {bool shouldUseReplace = false, bool shouldTrackEvent = true, String? recordChangeTag, CKLocalDatabaseBatch? batch}) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
@@ -449,7 +459,8 @@ class CKLocalDatabaseManager
 
     if (!shouldUseReplace)
     {
-      batch == null ? await _databaseInstance.insert(tableName, formattedJSON) : batch.insert(tableName, formattedJSON);
+
+      batch == null ? await _databaseInstance.insert(tableName, formattedJSON) : batch._briteBatch.insert(tableName, formattedJSON);
     }
     else
     {
@@ -457,18 +468,18 @@ class CKLocalDatabaseManager
       var values = formattedJSON.entries.map((keyValue) => keyValue.value).toList();
       var valuesPlaceholderString = values.map((value) => "?").join(",");
       var replaceSQL = 'REPLACE INTO `$tableName`($columns) VALUES($valuesPlaceholderString)';
-      batch == null ? await _databaseInstance.executeAndTrigger([tableName], replaceSQL, values) : batch.executeAndTrigger([tableName], replaceSQL, values);
+      batch == null ? await _databaseInstance.executeAndTrigger([tableName], replaceSQL, values) : batch._briteBatch.executeAndTrigger([tableName], replaceSQL, values);
     }
 
     var uuidToTypeReplaceSQL = 'REPLACE INTO `$_uuidToTypeTableName` (uuid, type) VALUES(?, ?)';
-    batch == null ? await _databaseInstance.execute(uuidToTypeReplaceSQL, [objectID, tableName]) : batch.execute(uuidToTypeReplaceSQL, [objectID, tableName]);
+    batch == null ? await _databaseInstance.execute(uuidToTypeReplaceSQL, [objectID, tableName]) : batch._briteBatch.execute(uuidToTypeReplaceSQL, [objectID, tableName]);
 
     if (shouldTrackEvent)
     {
       addEvent(CKDatabaseEvent<T>(
         CKRecordChange<T>(objectID, CKRecordOperationType.CREATE, T, localObject: localObject),
         CKDatabaseEventSource.local
-      ));
+      ), batch: batch);
     }
   }
 
@@ -488,7 +499,7 @@ class CKLocalDatabaseManager
   }
 
   /// Update an object in the database.
-  Future<void> update<T extends Object>(T updatedLocalObject, {bool shouldTrackEvent = true, String? recordChangeTag, IBriteBatch? batch}) async
+  Future<void> update<T extends Object>(T updatedLocalObject, {bool shouldTrackEvent = true, String? recordChangeTag, CKLocalDatabaseBatch? batch}) async
   {
     var recordStructure = CKRecordParser.getRecordStructureFromLocalType(T);
 
@@ -499,14 +510,14 @@ class CKLocalDatabaseManager
     String recordName = formattedJSON.remove(CKConstants.RECORD_NAME_FIELD);
 
     batch == null ? await _databaseInstance.update(recordStructure.ckRecordType, formattedJSON, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [recordName]) :
-        batch.update(recordStructure.ckRecordType, formattedJSON, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [recordName]);
+        batch._briteBatch.update(recordStructure.ckRecordType, formattedJSON, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [recordName]);
 
     if (shouldTrackEvent)
     {
       addEvent(CKDatabaseEvent<T>(
         CKRecordChange<T>(updatedLocalObjectJSON[CKConstants.RECORD_NAME_FIELD], CKRecordOperationType.UPDATE, T, localObject: updatedLocalObject),
         CKDatabaseEventSource.local
-      ));
+      ), batch: batch);
     }
   }
 
@@ -517,7 +528,7 @@ class CKLocalDatabaseManager
   }
 
   /// Delete an object from the database.
-  Future<void> delete<T extends Object>(String localObjectID, {bool shouldTrackEvent = true, IBriteBatch? batch}) async
+  Future<void> delete<T extends Object>(String localObjectID, {bool shouldTrackEvent = true, CKLocalDatabaseBatch? batch}) async
   {
     CKRecordStructure recordStructure;
     if (T != Object)
@@ -537,9 +548,9 @@ class CKLocalDatabaseManager
     if (shouldTrackEvent) localObject = await queryByID(localObjectID, recordStructure: recordStructure);
 
     batch == null ? await _databaseInstance.delete(recordStructure.ckRecordType, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [localObjectID]) :
-        batch.delete(recordStructure.ckRecordType, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [localObjectID]);
+        batch._briteBatch.delete(recordStructure.ckRecordType, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [localObjectID]);
     batch == null ? await _databaseInstance.delete(_uuidToTypeTableName, where: "uuid = ?", whereArgs: [localObjectID]) :
-        batch.delete(_uuidToTypeTableName, where: "uuid = ?", whereArgs: [localObjectID]);
+        batch._briteBatch.delete(_uuidToTypeTableName, where: "uuid = ?", whereArgs: [localObjectID]);
 
     for (var field in recordStructure.fields)
     {
@@ -547,12 +558,12 @@ class CKLocalDatabaseManager
       {
         var fieldPath = CKFieldPath.fromFieldStructure(localObjectID, field);
         batch == null ? await _databaseInstance.delete(_assetCacheTableName, where: "fieldPath = ?", whereArgs: [fieldPath.toString()]) :
-            batch.delete(_assetCacheTableName, where: "fieldPath = ?", whereArgs: [fieldPath.toString()]);
+            batch._briteBatch.delete(_assetCacheTableName, where: "fieldPath = ?", whereArgs: [fieldPath.toString()]);
       }
       else if (field.type.sqlite.isList)
       {
         batch == null ? await _databaseInstance.delete('`${recordStructure.ckRecordType}_${field.ckName}`', where: "`${recordStructure.ckRecordType}ID` = ?", whereArgs: [localObjectID]) :
-            batch.delete('`${recordStructure.ckRecordType}_${field.ckName}`', where: "`${recordStructure.ckRecordType}ID` = ?", whereArgs: [localObjectID]);
+            batch._briteBatch.delete('`${recordStructure.ckRecordType}_${field.ckName}`', where: "`${recordStructure.ckRecordType}ID` = ?", whereArgs: [localObjectID]);
       }
     }
 
@@ -561,19 +572,30 @@ class CKLocalDatabaseManager
       addEvent(CKDatabaseEvent<T>(
         CKRecordChange<T>(localObjectID, CKRecordOperationType.DELETE, T, localObject: localObject),
         CKDatabaseEventSource.local
-      ));
+      ), batch: batch);
     }
   }
 
-  /// Create a new database batch.
-  IBriteBatch batch()
+  IBriteBatch _createBriteBatch()
   {
     return _databaseInstance.batch();
   }
 
-  /// Add a database change event.
-  Future<void> addEvent(CKDatabaseEvent event, {bool shouldSync = true}) async
+  /// Create a new database batch.
+  CKLocalDatabaseBatch batch()
   {
+    return CKLocalDatabaseBatch(this);
+  }
+
+  /// Add a database change event.
+  Future<void> addEvent(CKDatabaseEvent event, {CKLocalDatabaseBatch? batch, bool shouldSync = true}) async
+  {
+    if (batch != null)
+    {
+      batch._addEvent(event);
+      return;
+    }
+
     if (event.recordChange.recordMetadata.changeTag == null)
     {
       event.recordChange.recordMetadata.changeTag = await queryChangeTag(event.recordChange.recordMetadata);
@@ -582,10 +604,44 @@ class CKLocalDatabaseManager
     if (shouldSync) await synchronizeAllEvents();
   }
 
+  Future<void> addEvents(List<CKDatabaseEvent> events, {bool shouldSync = true}) async
+  {
+    for (CKDatabaseEvent event in events)
+    {
+      await addEvent(event, shouldSync: false);
+    }
+    if (shouldSync) await synchronizeAllEvents();
+  }
+
   /// Sync all database events.
   Future<void> synchronizeAllEvents()
   {
     return _databaseEventHistory.synchronizeAll();
+  }
+}
+
+class CKLocalDatabaseBatch
+{
+  final List<CKDatabaseEvent> _events;
+  final IBriteBatch _briteBatch;
+  final CKLocalDatabaseManager _databaseManager;
+
+  CKLocalDatabaseBatch(this._databaseManager) : _events = [], _briteBatch = _databaseManager._createBriteBatch();
+
+  void _addEvent(CKDatabaseEvent event)
+  {
+    _events.add(event);
+  }
+
+  Future<void> commit() async
+  {
+    await _briteBatch.commit(noResult: true);
+
+    if (_events.length > 0)
+    {
+      _databaseManager.addEvents(_events);
+      await _databaseManager.synchronizeAllEvents();
+    }
   }
 }
 

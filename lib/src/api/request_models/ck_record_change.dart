@@ -19,8 +19,8 @@ class CKRecordMetadata
   String? changeTag;
 
   CKRecordMetadata(this.id, {Type? localType, String? recordType, this.changeTag}) :
-        localType = localType ?? CKRecordParser.getRecordStructureFromRecordType(recordType!).localType,
-        recordType = recordType ?? (localType != dynamic ? CKRecordParser.getRecordStructureFromLocalType(localType!).ckRecordType : null);
+        localType = localType ?? (recordType != null ? CKRecordParser.getRecordStructureFromRecordType(recordType).localType : null),
+        recordType = recordType ?? (localType != null && localType != dynamic ? CKRecordParser.getRecordStructureFromLocalType(localType).ckRecordType : null);
 }
 
 /// A string constant class for record operation types.

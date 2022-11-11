@@ -1,5 +1,3 @@
-import 'package:sqlbrite/sqlbrite.dart';
-
 import '/src/parsing/ck_record_parser.dart';
 import '/src/api/ck_operation.dart';
 import '/src/api/request_models/ck_record_change.dart';
@@ -16,12 +14,12 @@ class CKDatabaseEvent<T extends Object>
   CKDatabaseEvent(this.recordChange, this.source);
 
   /// Sync the database change event to the cloud or local database.
-  Future<void> synchronize(CKLocalDatabaseManager databaseManager, [IBriteBatch? batch]) async
+  Future<void> synchronize(CKLocalDatabaseManager databaseManager, [CKLocalDatabaseBatch? batch, List<CKRecordChange>? cloudRecordChanges]) async
   {
     switch (source)
     {
       case CKDatabaseEventSource.local:
-        await performOnCloudDatabase(databaseManager);
+        await performOnCloudDatabase(databaseManager, cloudRecordChanges);
         break;
 
       case CKDatabaseEventSource.cloud:
@@ -31,13 +29,21 @@ class CKDatabaseEvent<T extends Object>
   }
 
   /// Perform the change on the cloud database.
-  Future<void> performOnCloudDatabase(CKLocalDatabaseManager databaseManager) async
+  Future<void> performOnCloudDatabase(CKLocalDatabaseManager databaseManager, List<CKRecordChange>? cloudRecordChanges) async
   {
     if (recordChange.localObject == null) return;
 
     var recordJSON = CKRecordParser.localObjectToRecord<T>(recordChange.localObject!);
+    var currentRecordChange = CKRecordChange(recordChange.recordMetadata.id, recordChange.operationType, T, recordJSON: recordJSON, recordChangeTag: recordChange.recordMetadata.changeTag);
+
+    if (cloudRecordChanges != null)
+    {
+      cloudRecordChanges.add(currentRecordChange);
+      return;
+    }
+
     var modifyOperation = CKRecordModifyOperation(databaseManager.cloudDatabase, zoneID: databaseManager.cloudZone, recordChanges: [
-      CKRecordChange(recordChange.recordMetadata.id, recordChange.operationType, T, recordJSON: recordJSON, recordChangeTag: recordChange.recordMetadata.changeTag)
+      currentRecordChange
     ]);
     var modifyCallback = await modifyOperation.execute();
     if (modifyCallback.response == null) return;
@@ -50,7 +56,7 @@ class CKDatabaseEvent<T extends Object>
   }
 
   /// Perform the change on the local database.
-  Future<void> performOnLocalDatabase(CKLocalDatabaseManager databaseManager, [IBriteBatch? batch]) async
+  Future<void> performOnLocalDatabase(CKLocalDatabaseManager databaseManager, [CKLocalDatabaseBatch? batch]) async
   {
     if (recordChange.operationType != CKRecordOperationType.DELETE && recordChange.operationType != CKRecordOperationType.FORCE_DELETE)
     {
@@ -100,6 +106,12 @@ class CKDatabaseEventList
     if (!isSyncing) _cleanEvents();
   }
 
+  void addAll(List<CKDatabaseEvent> elements)
+  {
+    _l.addAll(elements);
+    if (!isSyncing) _cleanEvents();
+  }
+
   /// Sync all database events.
   Future<void> synchronizeAll() async
   {
@@ -107,17 +119,29 @@ class CKDatabaseEventList
     isSyncing = true;
 
     var syncBatch = _databaseManager.batch();
+    var cloudRecordChanges = <CKRecordChange>[];
 
     for (var i=0; i < _l.length; i++)
     {
-      await _l[i].synchronize(_databaseManager, syncBatch);
+      await _l[i].synchronize(_databaseManager, syncBatch, cloudRecordChanges);
       _l.removeAt(i);
       i--;
     }
 
-    await syncBatch.commit(noResult: true);
-
     isSyncing = false;
+
+    await syncBatch.commit();
+
+    if (cloudRecordChanges.length > 0)
+    {
+      var modifyOperation = CKRecordModifyOperation(_databaseManager.cloudDatabase, zoneID: _databaseManager.cloudZone, recordChanges: cloudRecordChanges);
+      var modifyCallback = await modifyOperation.execute();
+      for (var recordMetadata in modifyCallback.response ?? [])
+      {
+        if (recordMetadata.recordType == null) continue;
+        await _databaseManager.updateChangeTag(recordMetadata);
+      }
+    }
   }
 
   void _cleanEvents() // TODO: Account for local vs cloud changes
