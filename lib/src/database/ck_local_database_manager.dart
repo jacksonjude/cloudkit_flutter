@@ -463,7 +463,6 @@ class CKLocalDatabaseManager
 
     if (!shouldUseReplace)
     {
-
       batch == null ? await _databaseInstance.insert(tableName, formattedJSON) : batch._briteBatch.insert(tableName, formattedJSON);
     }
     else
@@ -613,6 +612,7 @@ class CKLocalDatabaseManager
     if (shouldSync) await synchronizeAllEvents();
   }
 
+  /// Add a list of database change events.
   Future<void> addEvents(List<CKDatabaseEvent> events, {bool shouldSync = true}) async
   {
     for (CKDatabaseEvent event in events)
@@ -629,6 +629,7 @@ class CKLocalDatabaseManager
   }
 }
 
+/// A batch for a set of local database changes.
 class CKLocalDatabaseBatch
 {
   final List<CKDatabaseEvent> _events;
@@ -642,6 +643,7 @@ class CKLocalDatabaseBatch
     _events.add(event);
   }
 
+  /// Commit the batched changes.
   Future<void> commit() async
   {
     await _briteBatch.commit(noResult: true);
