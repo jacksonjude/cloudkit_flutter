@@ -65,8 +65,12 @@ class CKLocalDatabaseManager
     managerToInit.cloudDatabase = database ?? CKDatabase.PRIVATE_DATABASE;
     managerToInit.cloudZone = zone ?? CKZone();
 
-    // deleteDatabase(managerToInit._databaseName);
-    // managerToInit._resetSyncToken();
+    const resetOnLaunch = false;
+    if (resetOnLaunch)
+    {
+      deleteDatabase(managerToInit._databaseName);
+      managerToInit._resetSyncToken();
+    }
 
     var databaseInstance = await openDatabase(
       managerToInit._databaseName,
@@ -545,7 +549,12 @@ class CKLocalDatabaseManager
     }
 
     T? localObject;
-    if (shouldTrackEvent) localObject = await queryByID(localObjectID, recordStructure: recordStructure);
+    String? recordChangeTag;
+    if (shouldTrackEvent)
+    {
+      localObject = await queryByID(localObjectID, recordStructure: recordStructure);
+      recordChangeTag = await queryChangeTag(CKRecordMetadata(localObjectID, recordType: recordStructure.ckRecordType));
+    }
 
     batch == null ? await _databaseInstance.delete(recordStructure.ckRecordType, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [localObjectID]) :
         batch._briteBatch.delete(recordStructure.ckRecordType, where: "${CKConstants.RECORD_NAME_FIELD} = ?", whereArgs: [localObjectID]);
@@ -570,7 +579,7 @@ class CKLocalDatabaseManager
     if (shouldTrackEvent)
     {
       addEvent(CKDatabaseEvent<T>(
-        CKRecordChange<T>(localObjectID, CKRecordOperationType.DELETE, T, localObject: localObject),
+        CKRecordChange<T>(localObjectID, CKRecordOperationType.DELETE, T, localObject: localObject, recordChangeTag: recordChangeTag),
         CKDatabaseEventSource.local
       ), batch: batch);
     }
