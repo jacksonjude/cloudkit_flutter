@@ -262,11 +262,14 @@ class CKLocalDatabaseManager
           return true;
         });
 
-        var insertBatch = batch?._briteBatch ?? _databaseInstance.batch();
+        var updateJoinTableBatch = batch?._briteBatch ?? _databaseInstance.batch();
         objectsToInsert.forEach((element) {
-          insertBatch.insert('`${recordStructure.ckRecordType}_${field.ckName}`', {'`${recordStructure.ckRecordType}ID`': recordJSON[CKConstants.RECORD_NAME_FIELD], field.ckName: element});
+          updateJoinTableBatch.insert('`${recordStructure.ckRecordType}_${field.ckName}`', {'`${recordStructure.ckRecordType}ID`': recordJSON[CKConstants.RECORD_NAME_FIELD], field.ckName: element});
         });
-        if (batch == null) await insertBatch.commit();
+        existingObjects.forEach((element) {
+          updateJoinTableBatch.delete('`${recordStructure.ckRecordType}_${field.ckName}`', where: '`${recordStructure.ckRecordType}ID`=? AND `${field.ckName}`=?', whereArgs: [recordJSON[CKConstants.RECORD_NAME_FIELD], element]);
+        });
+        if (batch == null) await updateJoinTableBatch.commit();
 
         recordJSON.remove(field.ckName);
       }
