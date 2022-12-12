@@ -30,12 +30,22 @@ class _CKAuthWebViewState extends State<CKAuthWebView>
   @override
   Widget build(BuildContext context)
   {
+    var signInRequired = true;
+
+    Widget cancelButton;
+
+    if (signInRequired == false) {
+      cancelButton = IconButton(
+        icon: Icon(Icons.arrow_back),
+        onPressed: () => Navigator.pop(context, CKAuthCallback(CKAuthState.cancel)),
+      );
+    } else {
+      cancelButton = Text("");
+    }
+
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context, CKAuthCallback(CKAuthState.cancel)),
-        ),
+        leading: cancelButton,
         title: Text(widget.title),
       ),
       body: Builder(builder: (BuildContext context) {
