@@ -24,6 +24,7 @@ dependencies:
   sqlbrite: ^2.3.0
   tuple: ^2.0.0
   quiver: ^3.1.0
+  url_launcher: ^6.1.7
 
 dev_dependencies:
   flutter_test:
