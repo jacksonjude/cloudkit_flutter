@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -44,6 +45,8 @@ class _CKAuthWebViewState extends State<CKAuthWebView>
       cancelButton = Text("");
     }
 
+    var children = <Widget>[];
+
     var webView = WebView(
       initialUrl: widget.authenticationURL,
       javascriptMode: JavascriptMode.unrestricted,
@@ -72,11 +75,42 @@ class _CKAuthWebViewState extends State<CKAuthWebView>
         return NavigationDecision.navigate;
       },
     );
-
-    var children = <Widget>[];
-
     children.add(webView);
-    // children.add(Text("An AppleID is required.  Tap here to create one."));
+
+    if (signInRequired == true) {
+      var accountRequired = Text.rich(
+          TextSpan(
+              style: TextStyle(fontSize: 13),
+              children: [
+                TextSpan(
+                    style: TextStyle(color: Colors.black),
+                    text: "If you don't have an Apple ID, "
+                ),
+                TextSpan(
+                    style: TextStyle(color: Colors.blue),
+                    text: "create a new one.",
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () async {
+                        var uri = Uri.parse("https://appleid.apple.com/account");
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      }
+                ),
+                // TextSpan(text: " It's secure, private, and free."),
+              ]
+          )
+      );
+
+      var container = Container(
+        padding: EdgeInsets.symmetric(vertical: 50.0, horizontal: 35.0),
+        child: accountRequired
+      );
+
+      children.add(container);
+    }
+
+    var stack = Stack(
+      children: children,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -84,9 +118,7 @@ class _CKAuthWebViewState extends State<CKAuthWebView>
         title: Text(widget.title),
       ),
       body: Builder(builder: (BuildContext context) {
-        return Stack(
-          children: children,
-        );
+        return stack;
       })
     );
   }
