@@ -6,7 +6,9 @@ import '/src/api/request_models/ck_zone.dart';
 /// An annotation to link a local model class reference field to a CloudKit record reference field.
 class CKReferenceFieldAnnotation<T extends Object> extends CKFieldAnnotation
 {
-  const CKReferenceFieldAnnotation(String name) : super(name);
+  final bool isParent;
+
+  const CKReferenceFieldAnnotation(String name, {this.isParent = false}) : super(name);
 
   CKReference createReference(String referenceUUID, CKDatabase database, {CKZone? zone}) =>
       CKReference<T>(referenceUUID, database, zoneID: zone);
