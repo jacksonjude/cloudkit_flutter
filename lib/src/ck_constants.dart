@@ -16,6 +16,7 @@ class CKConstants
   static const RECORD_NAME_FIELD = "recordName";
   static const RECORD_TYPE_FIELD = "recordType";
   static const RECORD_CHANGE_TAG_FIELD = "recordChangeTag";
+  static const RECORD_PARENT_FIELD = "parent";
   static const RECORD_FIELDS_FIELD = "fields";
 
   static const DEFAULT_ZONE_NAME = "_defaultZone";

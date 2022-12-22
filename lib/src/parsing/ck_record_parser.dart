@@ -334,6 +334,15 @@ class CKRecordParser
         "value": value,
         "type": recordField.type.record
       };
+
+      if (recordField.type == CKFieldType.REFERENCE_TYPE)
+      {
+        var referenceAnnotation = recordField.annotation as CKReferenceFieldAnnotation;
+        if (referenceAnnotation.isParent)
+        {
+          recordData[CKConstants.RECORD_PARENT_FIELD] = {"recordName": value[CKConstants.RECORD_NAME_FIELD]};
+        }
+      }
     });
 
     recordData[CKConstants.RECORD_FIELDS_FIELD] = fields;
