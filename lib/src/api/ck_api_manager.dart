@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -73,7 +74,7 @@ class CKAPIManager
       }
 
       print(originalURI);
-      print(json.encode(operationBody ?? {}));
+      log(json.encode(operationBody ?? {}));
       print(response.statusCode);
 
       switch (response.statusCode)

@@ -309,10 +309,16 @@ class CKRecordModifyOperation extends CKPostOperation
   Future<CKOperationCallback<List<CKRecordMetadata>>> execute() async
   {
     CKOperationCallback recordModifyCallback = await super.execute();
-    List modifiedRecords = recordModifyCallback.response["records"];
-    List<CKRecordMetadata> recordsMetadata = modifiedRecords.map((recordJSON) =>
-      CKRecordMetadata(recordJSON[CKConstants.RECORD_NAME_FIELD], recordType: recordJSON[CKConstants.RECORD_TYPE_FIELD], changeTag: recordJSON[CKConstants.RECORD_CHANGE_TAG_FIELD])
-    ).toList();
+
+    List<CKRecordMetadata> recordsMetadata = [];
+    if (recordModifyCallback.response != null)
+    {
+      List modifiedRecords = recordModifyCallback.response["records"];
+      recordsMetadata = modifiedRecords.map((recordJSON) =>
+          CKRecordMetadata(recordJSON[CKConstants.RECORD_NAME_FIELD], recordType: recordJSON[CKConstants.RECORD_TYPE_FIELD], changeTag: recordJSON[CKConstants.RECORD_CHANGE_TAG_FIELD])
+      ).toList();
+    }
+
     return CKOperationCallback<List<CKRecordMetadata>>(recordModifyCallback.state, response: recordsMetadata);
   }
 }
