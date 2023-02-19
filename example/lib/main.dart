@@ -55,8 +55,8 @@ Future<void> initializeCloudKit() async
     Department
   ]);
 
-  await CKAPIManager.initManager(ckContainer, ckAPIToken, ckEnvironment, navigatorKey: navigatorKey);
-  CKLocalDatabaseManager.initDatabase(recordStructures);
+  await CKAPIManager.shared.initManager(ckContainer, ckAPIToken, ckEnvironment, navigatorKey: navigatorKey);
+  CKLocalDatabaseManager.shared.initDatabase(recordStructures);
 }
 
 Future<dynamic> fetchJSON(String jsonPath) async

@@ -55,26 +55,26 @@ class CKLocalDatabaseManager
   StreamSubscription<CKNotification>? _notificationStreamSubscription;
   CKSyncToken? _syncToken;
 
-  /// Initialize the shared local database for the application. Optionally, a custom [CKLocalDatabaseManager] can be passed in.
-  static Future<void> initDatabase(Map<Type,CKRecordStructure> recordStructures, {CKDatabase? database, CKZone? zone, CKLocalDatabaseManager? manager}) async
+  /// Initialize a local database manager for the application.
+  Future<void> initDatabase(Map<Type,CKRecordStructure> recordStructures, {CKDatabase? database, CKZone? zone}) async
   {
     WidgetsFlutterBinding.ensureInitialized();
 
-    var managerToInit = manager ?? CKLocalDatabaseManager.shared;
+    // var managerToInit = manager ?? CKLocalDatabaseManager.shared;
 
-    managerToInit.cloudDatabase = database ?? CKDatabase.PRIVATE_DATABASE;
-    managerToInit.cloudZone = zone ?? CKZone();
+    this.cloudDatabase = database ?? CKDatabase.PRIVATE_DATABASE;
+    this.cloudZone = zone ?? CKZone();
 
     const resetOnLaunch = false;
     if (resetOnLaunch)
     {
-      deleteDatabase(managerToInit._databaseName);
-      managerToInit._resetSyncToken();
+      deleteDatabase(this._databaseName);
+      this._resetSyncToken();
     }
 
     var databaseInstance = await openDatabase(
-      managerToInit._databaseName,
-      version: managerToInit._databaseVersion,
+      this._databaseName,
+      version: this._databaseVersion,
       onCreate: (Database db, int version) async {
         for (var recordStructureEntry in recordStructures.entries)
         {
@@ -102,11 +102,11 @@ class CKLocalDatabaseManager
       }
     );
 
-    managerToInit._databaseInstance = BriteDatabase(databaseInstance);
+    this._databaseInstance = BriteDatabase(databaseInstance);
 
-    managerToInit._databaseEventHistory = CKDatabaseEventList(managerToInit);
+    this._databaseEventHistory = CKDatabaseEventList(this);
 
-    managerToInit._syncRecordTypes = recordStructures.keys.toList();
+    this._syncRecordTypes = recordStructures.keys.toList();
   }
 
   /// Begin cloud sync for the given APNS environment and [CKAPIManager].

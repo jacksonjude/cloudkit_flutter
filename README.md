@@ -158,9 +158,9 @@ Before calls to the CloudKit API can be made, four values must be provided to th
 - CloudKit Environment: Changes whether the production or development environment is used. Corresponding values are provided as constants in the [CKEnvironment](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_init/CKEnvironment-class.html) class.
 - Global Navigator Key: An optional `GlobalKey<NavigatorState>` which is passed into the `navigatorKey` property of your app widget. Used to display a popup screen for iCloud Sign-In when the private database is accessed.
 
-To initialize the manager, these four values must be passed into [CKAPIManager.initManager](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_init/CKAPIManager/initManager.html):
+To initialize the manager, these four values must be passed into [CKAPIManager.shared.initManager](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_init/CKAPIManager/initManager.html):
 ```dart
-CKAPIManager.initManager(String container, String apiToken, CKEnvironment environment, {GlobalKey<NavigatorState>? navigatorKey, CKAPIManager? manager}) async
+CKAPIManager.shared.initManager(String container, String apiToken, CKEnvironment environment, {GlobalKey<NavigatorState>? navigatorKey, CKAPIManager? manager}) async
 ```
 This call should directly follow the call to [CKRecordParser.createRecordStructures](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_init/CKRecordParser/createRecordStructures.html), as described [above](#reflection-setup).
 
@@ -175,9 +175,9 @@ Before an instance of [CKLocalDatabaseManager](https://pub.dev/documentation/clo
 - (Optional) A [CKDatabase](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_api/CKDatabase-class.html) target, defaults to `CKDatabase.PRIVATE_DATABASE`
 - (Optional) A [CKZone](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_api/CKZone-class.html) target, defaults to `CKZone()`
 
-To initialize the database, these three values must be passed into [CKLocalDatabaseManager.initDatabase](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_init/CKLocalDatabaseManager/initDatabase.html):
+To initialize the database, these three values must be passed into [CKLocalDatabaseManager.shared.initDatabase](https://pub.dev/documentation/cloudkit_flutter/latest/cloudkit_flutter_init/CKLocalDatabaseManager/initDatabase.html):
 ```dart
-CKLocalDatabaseManager.initDatabase(Map<Type,CKRecordStructure> recordStructures, {CKDatabase? database, CKZone? zone, CKLocalDatabaseManager? manager}) async
+CKLocalDatabaseManager.shared.initDatabase(Map<Type,CKRecordStructure> recordStructures, {CKDatabase? database, CKZone? zone}) async
 ```
 
 ### Cloud Sync

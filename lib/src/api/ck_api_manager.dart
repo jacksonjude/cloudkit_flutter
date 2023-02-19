@@ -30,20 +30,18 @@ class CKAPIManager
     return _instance!;
   }
 
-  /// Initialize the shared API manager for the application. Optionally, a custom [CKAPIManager] can be passed in.
-  static Future<void> initManager(String ckContainer, String ckAPIToken, CKEnvironment environment, {GlobalKey<NavigatorState>? navigatorKey, CKAPIManager? manager, bool shouldFetchWebAuthToken = true}) async
+  /// Initialize an API manager for the application.
+  Future<void> initManager(String ckContainer, String ckAPIToken, CKEnvironment environment, {GlobalKey<NavigatorState>? navigatorKey, bool shouldFetchWebAuthToken = true}) async
   {
-    var managerToInit = manager ?? CKAPIManager.shared;
-
-    managerToInit._ckContainer = ckContainer;
-    managerToInit._ckAPIToken = ckAPIToken;
-    managerToInit._environment = environment;
-    managerToInit._redirectURLPattern = CKConstants.REDIRECT_URL_PATTERN_PREFIX + ckContainer.toLowerCase();
-    managerToInit._navigatorKey = navigatorKey;
+    this._ckContainer = ckContainer;
+    this._ckAPIToken = ckAPIToken;
+    this._environment = environment;
+    this._redirectURLPattern = CKConstants.REDIRECT_URL_PATTERN_PREFIX + ckContainer.toLowerCase();
+    this._navigatorKey = navigatorKey;
 
     if (shouldFetchWebAuthToken)
     {
-      await managerToInit._fetchWebAuthToken();
+      await this._fetchWebAuthToken();
     }
   }
 

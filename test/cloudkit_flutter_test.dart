@@ -143,7 +143,7 @@ Future<void> testPublicDatabase() async
   final String ckAPIToken = environmentVariables["ckAPIToken"];
   final CKEnvironment ckEnvironment = CKEnvironment(environmentVariables["ckEnvironment"]);
 
-  await CKAPIManager.initManager(ckContainer, ckAPIToken, ckEnvironment, shouldFetchWebAuthToken: false);
+  await CKAPIManager.shared.initManager(ckContainer, ckAPIToken, ckEnvironment, shouldFetchWebAuthToken: false);
 
   test('standard fetch', () async {
     var queryOperation = CKRecordQueryOperation<Employee>(CKDatabase.PUBLIC_DATABASE);
