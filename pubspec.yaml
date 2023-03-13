@@ -5,18 +5,17 @@ homepage: https://jacksonjude.com
 repository: https://github.com/jacksonjude/cloudkit_flutter
 
 environment:
-  sdk: ">=2.12.0 <3.0.0"
-  flutter: ">=1.17.0"
+  sdk: ">=2.18.6 <3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
-  webview_flutter: ^3.0.4
-  http: ^0.13.4
-  reflectable: ^3.0.8
-  build_runner: ^2.1.11
-  shared_preferences: ^2.0.15
+  webview_flutter: ^4.0.6
+  http: ^0.13.5
+  reflectable: ^4.0.5
+  build_runner: ^2.3.3
+  shared_preferences: ^2.0.18
 
 dev_dependencies:
   flutter_test:
